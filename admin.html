@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bunny Bliss 後台管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #fdf8f3;
+      --cream-dark: #f5ece1;
+      --gold: #c9956b;
+      --gold-dark: #a97848;
+      --gold-light: #e8c4a0;
+      --pink: #f2b8c6;
+      --pink-light: #fde8ef;
+      --brown: #3d2b1f;
+      --brown-mid: #7a5c4f;
+      --brown-light: #b08878;
+      --white: #ffffff;
+      --sidebar-w: 240px;
+      --shadow: 0 2px 16px rgba(61,43,31,0.08);
+      --shadow-md: 0 4px 24px rgba(61,43,31,0.12);
+      --radius: 14px;
+      --radius-sm: 8px;
+      --green: #5cb85c;
+      --red: #e05555;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: #f7f2ec; color: var(--brown); min-height: 100vh; }
+
+    /* ── Login Screen ── */
+    .login-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #fde8d8 0%, #fdf3ec 50%, #fde8ef 100%);
+      padding: 24px;
+    }
+    .login-box {
+      background: var(--white); border-radius: 24px; padding: 44px 40px;
+      width: 100%; max-width: 380px; text-align: center;
+      box-shadow: var(--shadow-md);
+    }
+    .login-box img { height: 52px; margin-bottom: 8px; }
+    .login-box h2 { font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 600; color: var(--brown); margin-bottom: 6px; }
+    .login-box p { font-size: 13px; color: var(--brown-light); margin-bottom: 28px; }
+    .login-box .form-group { margin-bottom: 14px; text-align: left; }
+    .login-box .form-group label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: var(--brown-mid); margin-bottom: 6px; text-transform: uppercase; }
+    .login-box .form-group input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--cream-dark);
+      border-radius: var(--radius-sm); font-family: inherit; font-size: 14px;
+      color: var(--brown); outline: none; transition: border-color 0.2s;
+    }
+    .login-box .form-group input:focus { border-color: var(--gold); }
+    .btn-login {
+      width: 100%; background: var(--gold); color: var(--white); border: none;
+      padding: 14px; border-radius: 12px; font-family: inherit; font-size: 15px;
+      font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 8px;
+    }
+    .btn-login:hover { background: var(--gold-dark); }
+    .login-err { font-size: 13px; color: var(--red); margin-top: 10px; min-height: 20px; }
+
+    /* ── App Shell ── */
+    .app { display: none; min-height: 100vh; }
+    .app.visible { display: flex; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w); flex-shrink: 0; background: var(--brown);
+      display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-logo img { height: 40px; filter: brightness(0) invert(1); opacity: 0.9; }
+    .sidebar-logo p { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; letter-spacing: 0.5px; }
+
+    .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 10px; cursor: pointer;
+      color: rgba(255,255,255,0.6); font-size: 14px; font-weight: 500;
+      transition: all 0.2s; border: none; background: none; font-family: inherit; width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+    .nav-item.active { background: var(--gold); color: var(--white); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .nav-label { flex: 1; }
+    .nav-badge {
+      background: var(--pink); color: var(--brown); font-size: 10px;
+      font-weight: 700; padding: 2px 7px; border-radius: 10px; min-width: 20px; text-align: center;
+    }
+
+    .sidebar-bottom { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .btn-preview {
+      display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px;
+      background: rgba(201,149,107,0.2); border: 1px solid rgba(201,149,107,0.3);
+      border-radius: 10px; color: var(--gold-light); font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: inherit; transition: all 0.2s; text-decoration: none; justify-content: center;
+    }
+    .btn-preview:hover { background: rgba(201,149,107,0.35); }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-y: auto; }
+    .topbar {
+      background: var(--white); padding: 0 32px; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--cream-dark); flex-shrink: 0;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-title { font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 600; color: var(--brown); }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+    .btn-add {
+      background: var(--gold); color: var(--white); border: none;
+      padding: 9px 20px; border-radius: 20px; font-family: inherit;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-add:hover { background: var(--gold-dark); }
+
+    .content { padding: 28px 32px; flex: 1; }
+
+    /* ── Stats row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--white); border-radius: var(--radius); padding: 20px 24px;
+      box-shadow: var(--shadow);
+    }
+    .stat-label { font-size: 12px; color: var(--brown-light); font-weight: 500; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .stat-value { font-family: 'Noto Serif TC', serif; font-size: 28px; font-weight: 600; color: var(--brown); }
+    .stat-sub { font-size: 12px; color: var(--brown-light); margin-top: 4px; }
+
+    /* ── Section panels ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Table card ── */
+    .table-card {
+      background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+    }
+    .table-card-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--cream-dark);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .table-card-header h3 { font-size: 15px; font-weight: 700; color: var(--brown); }
+    .table-card-header span { font-size: 12px; color: var(--brown-light); }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: var(--brown-light); text-transform: uppercase; background: #faf6f1; border-bottom: 1px solid var(--cream-dark); }
+    td { padding: 14px 16px; border-bottom: 1px solid var(--cream-dark); font-size: 14px; color: var(--brown-mid); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fdf8f3; }
+
+    .thumb { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: var(--cream-dark); display: block; }
+    .thumb-placeholder { width: 52px; height: 52px; border-radius: 10px; background: var(--cream-dark); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+
+    .tag-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+    }
+    .tag-active { background: #e8f5e9; color: #2e7d32; }
+    .tag-hidden { background: #fce4ec; color: #c62828; }
+    .tag-slide { background: var(--pink-light); color: var(--gold-dark); }
+
+    .action-btns { display: flex; gap: 6px; }
+    .btn-icon {
+      width: 32px; height: 32px; border-radius: var(--radius-sm); border: none;
+      cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-edit { background: #fff8f0; color: var(--gold); }
+    .btn-edit:hover { background: var(--gold); color: var(--white); }
+    .btn-delete { background: #fff0f0; color: var(--red); }
+    .btn-delete:hover { background: var(--red); color: var(--white); }
+    .btn-toggle { background: #f0f8f0; color: var(--green); font-size: 12px; width: auto; padding: 0 10px; }
+    .btn-toggle.off { background: #fce4ec; color: var(--red); }
+    .btn-toggle:hover { opacity: 0.8; }
+
+    /* order arrows */
+    .btn-order { background: var(--cream-dark); color: var(--brown-mid); font-size: 12px; }
+    .btn-order:hover { background: var(--gold-light); }
+
+    /* drag handle */
+    .drag-handle { cursor: grab; color: var(--brown-light); font-size: 16px; padding: 0 8px; user-select: none; }
+    .drag-handle:active { cursor: grabbing; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(61,43,31,0.4); backdrop-filter: blur(4px);
+      z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--white); border-radius: 20px; width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto; position: relative;
+      transform: translateY(12px) scale(0.98); transition: transform 0.2s;
+    }
+    .modal-overlay.active .modal { transform: none; }
+    .modal-header {
+      padding: 24px 28px 20px; border-bottom: 1px solid var(--cream-dark);
+      display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--white); z-index: 1;
+    }
+    .modal-header h3 { font-family: 'Noto Serif TC', serif; font-size: 17px; font-weight: 600; }
+    .modal-close {
+      background: var(--cream-dark); border: none; width: 30px; height: 30px;
+      border-radius: 50%; cursor: pointer; font-size: 14px; color: var(--brown-mid);
+      display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+    }
+    .modal-close:hover { background: #eee; }
+    .modal-body { padding: 24px 28px; }
+    .modal-footer {
+      padding: 16px 28px 24px; display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--brown-mid); letter-spacing: 0.5px; margin-bottom: 7px; text-transform: uppercase; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 11px 13px; border: 1.5px solid var(--cream-dark);
+      border-radius: var(--radius-sm); font-family: inherit; font-size: 14px;
+      color: var(--brown); background: var(--white); outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--gold); }
+    .form-group textarea { resize: vertical; min-height: 72px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-hint { font-size: 11px; color: var(--brown-light); margin-top: 4px; }
+    .img-preview-wrap { margin-top: 8px; }
+    .img-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: var(--radius-sm); border: 1.5px solid var(--cream-dark); display: none; }
+    .img-preview.show { display: block; }
+    .color-row { display: flex; align-items: center; gap: 10px; }
+    .color-row input[type=color] { width: 40px; height: 38px; padding: 2px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
+    .color-row input[type=text] { flex: 1; }
+
+    .gradient-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+    .gradient-swatch {
+      height: 40px; border-radius: 8px; cursor: pointer;
+      border: 2px solid transparent; transition: border-color 0.15s;
+    }
+    .gradient-swatch.selected, .gradient-swatch:hover { border-color: var(--gold); }
+
+    .btn-cancel {
+      background: var(--cream-dark); color: var(--brown-mid); border: none;
+      padding: 11px 22px; border-radius: 10px; font-family: inherit; font-size: 14px;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-cancel:hover { background: #eddfd4; }
+    .btn-save {
+      background: var(--gold); color: var(--white); border: none;
+      padding: 11px 28px; border-radius: 10px; font-family: inherit; font-size: 14px;
+      font-weight: 700; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-save:hover { background: var(--gold-dark); }
+
+    /* ── Confirm dialog ── */
+    .confirm-overlay {
+      position: fixed; inset: 0; background: rgba(61,43,31,0.4); backdrop-filter: blur(4px);
+      z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .confirm-overlay.active { opacity: 1; pointer-events: all; }
+    .confirm-box {
+      background: var(--white); border-radius: 16px; padding: 28px; max-width: 340px; width: 100%;
+      text-align: center; transform: scale(0.95); transition: transform 0.2s;
+    }
+    .confirm-overlay.active .confirm-box { transform: none; }
+    .confirm-icon { font-size: 36px; margin-bottom: 12px; }
+    .confirm-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .confirm-box p { font-size: 13px; color: var(--brown-mid); margin-bottom: 24px; line-height: 1.6; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-btns button { flex: 1; }
+    .btn-danger { background: var(--red); color: var(--white); border: none; padding: 11px; border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(70px);
+      background: var(--brown); color: var(--white);
+      padding: 11px 22px; border-radius: 50px; font-size: 13px; font-weight: 500;
+      z-index: 400; transition: transform 0.3s; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 60px 24px; color: var(--brown-light); }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Category chips ── */
+    .cat-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 20px; }
+    .cat-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s;
+    }
+    .cat-chip .del-chip {
+      background: none; border: none; cursor: pointer; font-size: 12px;
+      color: inherit; opacity: 0.6; padding: 0; line-height: 1; transition: opacity 0.15s;
+    }
+    .cat-chip .del-chip:hover { opacity: 1; }
+    .cat-chip-add {
+      background: var(--cream-dark); color: var(--brown-mid); border: 1.5px dashed var(--gold-light);
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all 0.2s;
+    }
+    .cat-chip-add:hover { background: var(--gold-light); color: var(--brown); }
+
+    /* inline add-category row */
+    .cat-add-row { display: flex; gap: 8px; padding: 0 20px 16px; align-items: center; }
+    .cat-add-row input {
+      flex: 1; padding: 9px 12px; border: 1.5px solid var(--cream-dark);
+      border-radius: var(--radius-sm); font-family: inherit; font-size: 13px;
+      color: var(--brown); outline: none; transition: border-color 0.2s;
+    }
+    .cat-add-row input:focus { border-color: var(--gold); }
+    .cat-add-row input[type=color] {
+      width: 38px; height: 38px; flex: none; padding: 2px;
+      border-radius: 8px; cursor: pointer;
+    }
+    .btn-cat-save {
+      background: var(--gold); color: var(--white); border: none;
+      padding: 9px 16px; border-radius: var(--radius-sm); font-family: inherit;
+      font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-cat-save:hover { background: var(--gold-dark); }
+
+    /* category filter tabs on products panel */
+    .cat-filter-bar {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 14px 20px 0; border-top: 1px solid var(--cream-dark);
+    }
+    .cat-filter-btn {
+      padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--cream-dark);
+      background: var(--white); font-family: inherit; font-size: 12px; font-weight: 600;
+      color: var(--brown-mid); cursor: pointer; transition: all 0.15s;
+    }
+    .cat-filter-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .cat-filter-btn.active { background: var(--gold); border-color: var(--gold); color: var(--white); }
+
+    /* banner preview strip */
+    .banner-preview-strip {
+      display: flex; gap: 12px; overflow-x: auto; padding: 12px 0 16px;
+      scrollbar-width: thin;
+    }
+    .banner-thumb {
+      flex-shrink: 0; width: 200px; height: 100px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; position: relative;
+      overflow: hidden; border: 2px solid transparent; cursor: pointer; transition: border-color 0.2s;
+    }
+    .banner-thumb:hover { border-color: var(--gold); }
+    .banner-thumb-title { font-size: 11px; font-weight: 700; color: var(--brown); text-align: center; padding: 8px; line-height: 1.4; z-index: 1; }
+    .banner-thumb-order { position: absolute; top: 6px; left: 6px; background: rgba(255,255,255,0.85); border-radius: 50%; width: 20px; height: 20px; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--brown); }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .stats-row { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div style="font-family:'Noto Serif TC',serif;font-size:26px;font-weight:600;color:var(--gold);letter-spacing:0.5px;margin-bottom:6px;">🐰 Bunny Bliss</div>
+    <h2>後台管理系統</h2>
+    <p>請輸入管理員密碼登入</p>
+    <div class="form-group">
+      <label>密碼</label>
+      <input type="password" id="login-pwd" placeholder="請輸入密碼" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()">登入後台</button>
+    <p class="login-err" id="login-err"></p>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app" id="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div style="font-family:'Noto Serif TC',serif;font-size:18px;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:0.5px;">Bunny Bliss</div>
+      <p>後台管理系統</p>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" id="nav-dashboard" onclick="switchPanel('dashboard')">
+        <span class="nav-icon">📊</span><span class="nav-label">總覽</span>
+      </button>
+      <button class="nav-item" id="nav-banners" onclick="switchPanel('banners')">
+        <span class="nav-icon">🖼</span><span class="nav-label">橫幅管理</span>
+        <span class="nav-badge" id="badge-banners">0</span>
+      </button>
+      <button class="nav-item" id="nav-categories" onclick="switchPanel('categories')">
+        <span class="nav-icon">🏷</span><span class="nav-label">分類管理</span>
+        <span class="nav-badge" id="badge-categories">0</span>
+      </button>
+      <button class="nav-item" id="nav-products" onclick="switchPanel('products')">
+        <span class="nav-icon">🍪</span><span class="nav-label">商品管理</span>
+        <span class="nav-badge" id="badge-products">0</span>
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="index.html" target="_blank" class="btn-preview">↗ 查看前台</a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">總覽</span>
+      <div class="topbar-actions">
+        <button class="btn-add" id="topbar-add-btn" style="display:none" onclick="openAddModal()">+ 新增</button>
+        <button class="btn-cancel" onclick="doLogout()" style="padding:9px 16px;font-size:13px">登出</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">橫幅數量</div>
+            <div class="stat-value" id="stat-banners">0</div>
+            <div class="stat-sub">已啟用 / 全部</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">上架商品</div>
+            <div class="stat-value" id="stat-products">0</div>
+            <div class="stat-sub">已上架 / 全部</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">商品價格區間</div>
+            <div class="stat-value" id="stat-price">—</div>
+            <div class="stat-sub">最低 ~ 最高 (NT$)</div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <h3>🖼 橫幅預覽順序</h3>
+            <span id="dash-banner-count">—</span>
+          </div>
+          <div style="padding:16px 20px 4px">
+            <div class="banner-preview-strip" id="dash-banner-strip"></div>
+          </div>
+        </div>
+        <div style="margin-top:20px" class="table-card">
+          <div class="table-card-header">
+            <h3>🍪 商品一覽</h3>
+            <span id="dash-product-count">—</span>
+          </div>
+          <table id="dash-product-table">
+            <thead><tr><th>商品</th><th>售價</th><th>狀態</th></tr></thead>
+            <tbody id="dash-product-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Categories Panel -->
+      <div class="panel" id="panel-categories">
+        <div class="table-card">
+          <div class="table-card-header">
+            <h3>分類列表</h3>
+            <span>點擊分類名稱可編輯，拖拉調整順序</span>
+          </div>
+          <div class="cat-chips" id="cat-chips-list"></div>
+          <div style="border-top:1px solid var(--cream-dark);padding-top:0">
+            <div style="padding:14px 20px 8px;font-size:11px;font-weight:700;color:var(--brown-light);letter-spacing:0.5px;text-transform:uppercase;">新增分類</div>
+            <div class="cat-add-row">
+              <input type="color" id="cat-new-color" value="#f2b8c6">
+              <input type="text" id="cat-new-name" placeholder="輸入分類名稱，例如：季節限定" maxlength="20" onkeydown="if(event.key==='Enter')addCategory()">
+              <button class="btn-cat-save" onclick="addCategory()">新增分類</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:20px" class="table-card">
+          <div class="table-card-header"><h3>各分類商品數量</h3></div>
+          <table>
+            <thead><tr><th>分類名稱</th><th>顏色</th><th>商品數</th><th>操作</th></tr></thead>
+            <tbody id="cat-stats-tbody"></tbody>
+          </table>
+          <div class="empty-state" id="cat-empty" style="display:none">
+            <div class="icon">🏷</div><p>尚無分類，請在上方新增</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banners Panel -->
+      <div class="panel" id="panel-banners">
+        <div class="table-card">
+          <div class="table-card-header">
+            <h3>橫幅列表</h3>
+            <span>拖曳或使用箭頭調整順序，首頁依此順序輪播</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px"></th>
+                <th style="width:80px">預覽</th>
+                <th>標題</th>
+                <th>標籤</th>
+                <th>狀態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="banners-tbody"></tbody>
+          </table>
+          <div class="empty-state" id="banners-empty" style="display:none">
+            <div class="icon">🖼</div>
+            <p>尚無橫幅，點擊右上角「新增橫幅」</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Panel -->
+      <div class="panel" id="panel-products">
+        <div class="table-card">
+          <div class="table-card-header">
+            <h3>商品列表</h3>
+            <span>拖曳或使用箭頭調整前台顯示順序</span>
+          </div>
+          <div class="cat-filter-bar" id="products-cat-filter"></div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px"></th>
+                <th style="width:72px">圖片</th>
+                <th>商品名稱</th>
+                <th>售價</th>
+                <th>分類</th>
+                <th>狀態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody"></tbody>
+          </table>
+          <div class="empty-state" id="products-empty" style="display:none">
+            <div class="icon">🍪</div>
+            <p>尚無商品，點擊右上角「新增商品」</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Banner Modal -->
+<div class="modal-overlay" id="banner-modal-overlay" onclick="closeModal('banner')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="banner-modal-title">新增橫幅</h3>
+      <button class="modal-close" onclick="closeModal('banner')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>標籤文字（小標）</label>
+        <input type="text" id="b-tag" placeholder="e.g. 手工現烤 ✦ 職人甜點">
+      </div>
+      <div class="form-group">
+        <label>主標題</label>
+        <textarea id="b-title" rows="2" placeholder="每一口，&#10;都是幸福滋味（換行請按 Enter）"></textarea>
+      </div>
+      <div class="form-group">
+        <label>描述文字</label>
+        <textarea id="b-desc" rows="3" placeholder="橫幅描述..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>按鈕一文字</label>
+          <input type="text" id="b-cta1" placeholder="立即選購">
+        </div>
+        <div class="form-group">
+          <label>按鈕二文字（可空白）</label>
+          <input type="text" id="b-cta2" placeholder="品牌故事">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>插圖路徑或網址</label>
+        <input type="text" id="b-illus" placeholder="e.g. 捲捲棒.jpg 或 https://..." oninput="previewImg('b-illus','b-illus-preview')">
+        <div class="img-preview-wrap"><img id="b-illus-preview" class="img-preview" src="" alt="預覽"></div>
+      </div>
+      <div class="form-group">
+        <label>背景圖片網址（選填）</label>
+        <input type="text" id="b-bg" placeholder="https://..." oninput="previewImg('b-bg','b-bg-preview')">
+        <div class="img-preview-wrap"><img id="b-bg-preview" class="img-preview" src="" alt="預覽"></div>
+      </div>
+      <div class="form-group">
+        <label>背景漸層色</label>
+        <div class="gradient-picker" id="gradient-picker"></div>
+      </div>
+      <div class="form-group">
+        <label>是否顯示</label>
+        <select id="b-active">
+          <option value="1">顯示（啟用）</option>
+          <option value="0">隱藏（停用）</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('banner')">取消</button>
+      <button class="btn-save" onclick="saveBanner()">儲存橫幅</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-overlay" id="product-modal-overlay" onclick="closeModal('product')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="product-modal-title">新增商品</h3>
+      <button class="modal-close" onclick="closeModal('product')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>商品名稱</label>
+        <input type="text" id="p-name" placeholder="e.g. 捲捲棒（原味）">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>售價（NT$）</label>
+          <input type="number" id="p-price" placeholder="280" min="0">
+        </div>
+        <div class="form-group">
+          <label>狀態</label>
+          <select id="p-active">
+            <option value="1">上架中</option>
+            <option value="0">已下架</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>商品描述</label>
+        <textarea id="p-desc" rows="3" placeholder="商品描述..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>商品圖片路徑或網址</label>
+        <input type="text" id="p-image" placeholder="e.g. 捲捲棒.jpg 或 https://..." oninput="previewImg('p-image','p-img-preview')">
+        <div class="img-preview-wrap"><img id="p-img-preview" class="img-preview" src="" alt="預覽"></div>
+        <p class="form-hint">可輸入相對路徑（同資料夾的圖片名稱）或完整網址</p>
+      </div>
+      <div class="form-group">
+        <label>商品分類</label>
+        <select id="p-category">
+          <option value="">— 不指定分類 —</option>
+        </select>
+        <p class="form-hint">如需新增分類，請前往「分類管理」頁面</p>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>標籤文字（可空白）</label>
+          <input type="text" id="p-badge" placeholder="🔥 人氣首選">
+        </div>
+        <div class="form-group">
+          <label>標籤背景色</label>
+          <div class="color-row">
+            <input type="color" id="p-badge-color-picker" value="#f2b8c6" oninput="document.getElementById('p-badge-color').value=this.value">
+            <input type="text" id="p-badge-color" value="#f2b8c6" placeholder="#f2b8c6" oninput="document.getElementById('p-badge-color-picker').value=this.value">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('product')">取消</button>
+      <button class="btn-save" onclick="saveProduct()">儲存商品</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑</div>
+    <h3 id="confirm-title">確認刪除？</h3>
+    <p id="confirm-msg">此操作無法復原。</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeConfirm()">取消</button>
+      <button class="btn-danger" id="confirm-ok">確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Password ──
+const ADMIN_PWD = 'bunnybliss';
+
+function doLogin() {
+  const pwd = document.getElementById('login-pwd').value;
+  if (pwd === ADMIN_PWD) {
+    sessionStorage.setItem('bb_admin', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    initApp();
+  } else {
+    document.getElementById('login-err').textContent = '密碼錯誤，請再試一次';
+    document.getElementById('login-pwd').value = '';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('bb_admin');
+  location.reload();
+}
+
+if (sessionStorage.getItem('bb_admin') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.addEventListener('DOMContentLoaded', initApp);
+}
+
+// ── Gradients ──
+const GRADIENTS = [
+  'linear-gradient(135deg,#fde8d8,#fdf3ec,#fde8ef)',
+  'linear-gradient(135deg,#fde8ef,#fdf3ec,#fde8d8)',
+  'linear-gradient(135deg,#e8f5e9,#fdf8f3,#e8f0fe)',
+  'linear-gradient(135deg,#f3e5f5,#fdf8f3,#fde8ef)',
+  'linear-gradient(135deg,#fff8e1,#fdf8f3,#fde8d8)',
+  'linear-gradient(135deg,#e8eaf6,#fdf8f3,#fde8ef)',
+  'linear-gradient(135deg,#fce4ec,#fff3e0,#f3e5f5)',
+  'linear-gradient(135deg,#e0f7fa,#fdf8f3,#f0f4c3)',
+];
+
+// ── Categories ──
+const DEFAULT_CATEGORIES = [
+  { id:1, name:'捲捲棒系列', color:'#f2b8c6', order:0 },
+  { id:2, name:'千層酥系列', color:'#c4d4a8', order:1 },
+  { id:3, name:'季節限定',   color:'#d4a8c7', order:2 },
+  { id:4, name:'禮盒組合',   color:'#a8c4d4', order:3 },
+];
+
+function getCategories() {
+  const r = localStorage.getItem('bb_categories');
+  return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+}
+function saveCategories(d) { localStorage.setItem('bb_categories', JSON.stringify(d)); }
+
+function addCategory() {
+  const name = document.getElementById('cat-new-name').value.trim();
+  if (!name) { showToast('請輸入分類名稱'); return; }
+  const color = document.getElementById('cat-new-color').value;
+  const cats = getCategories();
+  if (cats.find(c => c.name === name)) { showToast('分類名稱已存在'); return; }
+  const maxOrder = cats.length ? Math.max(...cats.map(c=>c.order)) : -1;
+  cats.push({ id: nextId(cats), name, color, order: maxOrder + 1 });
+  saveCategories(cats);
+  document.getElementById('cat-new-name').value = '';
+  renderCategoriesPanel();
+  updateBadges();
+  showToast(`分類「${name}」已新增 ✓`);
+}
+
+function deleteCategory(id) {
+  const cats = getCategories().filter(c => c.id !== id);
+  saveCategories(cats);
+  // remove from products
+  const prods = getProducts();
+  prods.forEach(p => { if (p.categoryId === id) p.categoryId = null; });
+  saveProducts(prods);
+  renderCategoriesPanel();
+  updateBadges();
+  showToast('分類已刪除');
+}
+
+function renderCategoriesPanel() {
+  const cats = getCategories().sort((a,b)=>a.order-b.order);
+  const products = getProducts();
+  document.getElementById('cat-empty').style.display = cats.length ? 'none' : '';
+
+  // chips
+  document.getElementById('cat-chips-list').innerHTML = cats.map(c => `
+    <span class="cat-chip" style="background:${c.color}20;color:${c.color};border-color:${c.color}40">
+      <span>${esc(c.name)}</span>
+      <button class="del-chip" onclick="deleteCategory(${c.id})" title="刪除">✕</button>
+    </span>`).join('');
+
+  // stats table
+  document.getElementById('cat-stats-tbody').innerHTML = cats.map((c,i) => {
+    const count = products.filter(p => p.categoryId === c.id).length;
+    return `<tr>
+      <td style="font-weight:600;color:var(--brown)">${esc(c.name)}</td>
+      <td><span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${c.color};vertical-align:middle"></span> <small>${c.color}</small></td>
+      <td>${count} 件</td>
+      <td>
+        <div class="action-btns">
+          ${i>0?`<button class="btn-icon btn-order" onclick="moveCat(${c.id},-1)">↑</button>`:''}
+          ${i<cats.length-1?`<button class="btn-icon btn-order" onclick="moveCat(${c.id},1)">↓</button>`:''}
+          <button class="btn-icon btn-delete" onclick="deleteCategory(${c.id})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function moveCat(id, dir) {
+  const cats = getCategories().sort((a,b)=>a.order-b.order);
+  const i = cats.findIndex(c=>c.id===id);
+  const ni = i + dir;
+  if (ni < 0 || ni >= cats.length) return;
+  [cats[i].order, cats[ni].order] = [cats[ni].order, cats[i].order];
+  saveCategories(cats);
+  renderCategoriesPanel();
+}
+
+function populateCategorySelect(selectedId) {
+  const cats = getCategories().sort((a,b)=>a.order-b.order);
+  const sel = document.getElementById('p-category');
+  sel.innerHTML = '<option value="">— 不指定分類 —</option>' +
+    cats.map(c => `<option value="${c.id}" ${c.id===selectedId?'selected':''}>${esc(c.name)}</option>`).join('');
+}
+
+// ── Data ──
+const DEFAULT_BANNERS = [
+  { id:1, active:true, tag:'手工現烤 ✦ 職人甜點', title:'每一口，\n都是幸福滋味', desc:'Bunny Bliss 精選職人配方，以最純粹的食材手工製作，\n酥脆捲捲棒、層次豐富千層酥，\n讓每個瞬間都充滿甜蜜。', illustration:'658556235_18076090241232815_7694748661845347653_n.jpg', bgImage:'', cta1:'立即選購', cta2:'品牌故事', gradient:GRADIENTS[0] },
+  { id:2, active:true, tag:'季節限定 ✦ 紅茶烏龍', title:'台灣茶葉，\n千層香氣', desc:'精選台灣烏龍茶與阿薩姆紅茶，\n撒上杏仁片烘焙，每一層都是驚喜。', illustration:'紅茶烏龍千層.jpg', bgImage:'', cta1:'立即選購', cta2:'', gradient:GRADIENTS[2] },
+  { id:3, active:true, tag:'人氣首選 ✦ 巧克力', title:'比利時可可，\n濃郁苦甜', desc:'採用比利時頂級可可粉融入酥皮，\n深邃苦甜香氣，層次豐富令人回味。', illustration:'巧克力捲捲棒.jpg', bgImage:'', cta1:'立即選購', cta2:'', gradient:GRADIENTS[4] }
+];
+const DEFAULT_PRODUCTS = [
+  { id:1, active:true, name:'捲捲棒（原味）', price:280, desc:'以法式酥皮工藝手工製作，層層酥脆、入口即化，撒上細砂糖烤出焦糖香氣', image:'捲捲棒.jpg', badge:'🔥 人氣首選', badgeColor:'#f2b8c6', order:0 },
+  { id:2, active:true, name:'巧克力捲捲棒', price:300, desc:'採用比利時可可粉融入酥皮，深邃苦甜巧克力香氣，層次豐富令人回味無窮', image:'巧克力捲捲棒.jpg', badge:'✨ 新品上市', badgeColor:'#d4a8c7', order:1 },
+  { id:3, active:true, name:'紅茶烏龍千層酥', price:320, desc:'精選台灣烏龍茶融合阿薩姆紅茶，撒上杏仁片烘焙，千層酥皮帶來絕佳口感', image:'紅茶烏龍千層.jpg', badge:'🍵 季節限定', badgeColor:'#c4d4a8', order:2 }
+];
+
+function getBanners() { const r = localStorage.getItem('bb_banners'); return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_BANNERS)); }
+function getProducts() { const r = localStorage.getItem('bb_products'); return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)); }
+function saveBanners(d) { localStorage.setItem('bb_banners', JSON.stringify(d)); }
+function saveProducts(d) { localStorage.setItem('bb_products', JSON.stringify(d)); }
+
+function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id)) + 1 : 1; }
+
+// ── Current panel ──
+let currentPanel = 'dashboard';
+let editingBannerId = null;
+let editingProductId = null;
+let selectedGradient = GRADIENTS[0];
+let productFilterCat = null; // null = 全部
+
+function switchPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+
+  const titles = { dashboard:'總覽', banners:'橫幅管理', categories:'分類管理', products:'商品管理' };
+  document.getElementById('topbar-title').textContent = titles[name];
+
+  const addBtn = document.getElementById('topbar-add-btn');
+  const addLabels = { banners:'+ 新增橫幅', products:'+ 新增商品' };
+  if (addLabels[name]) { addBtn.style.display = ''; addBtn.textContent = addLabels[name]; }
+  else addBtn.style.display = 'none';
+
+  currentPanel = name;
+  renderCurrentPanel();
+}
+
+function openAddModal() {
+  if (currentPanel === 'banners') openBannerModal(null);
+  if (currentPanel === 'products') openProductModal(null);
+}
+
+function initApp() {
+  buildGradientPicker();
+  renderCurrentPanel();
+  updateBadges();
+}
+
+function updateBadges() {
+  const banners = getBanners();
+  const products = getProducts();
+  const categories = getCategories();
+  document.getElementById('badge-banners').textContent = banners.filter(b=>b.active).length;
+  document.getElementById('badge-categories').textContent = categories.length;
+  document.getElementById('badge-products').textContent = products.filter(p=>p.active).length;
+}
+
+function renderCurrentPanel() {
+  if (currentPanel === 'dashboard') renderDashboard();
+  if (currentPanel === 'banners') renderBannersPanel();
+  if (currentPanel === 'categories') renderCategoriesPanel();
+  if (currentPanel === 'products') renderProductsPanel();
+}
+
+// ── Dashboard ──
+function renderDashboard() {
+  const banners = getBanners();
+  const products = getProducts();
+  const activeBanners = banners.filter(b=>b.active);
+  const activeProducts = products.filter(p=>p.active);
+  document.getElementById('stat-banners').textContent = `${activeBanners.length} / ${banners.length}`;
+  document.getElementById('stat-products').textContent = `${activeProducts.length} / ${products.length}`;
+  const prices = products.map(p=>p.price);
+  document.getElementById('stat-price').textContent = prices.length ? `${Math.min(...prices)} ~ ${Math.max(...prices)}` : '—';
+  document.getElementById('dash-banner-count').textContent = `共 ${banners.length} 張，啟用 ${activeBanners.length} 張`;
+  document.getElementById('dash-product-count').textContent = `共 ${products.length} 件商品`;
+
+  // banner strip
+  const strip = document.getElementById('dash-banner-strip');
+  strip.innerHTML = banners.map((b,i) => `
+    <div class="banner-thumb" style="background:${b.gradient||GRADIENTS[0]}" onclick="switchPanel('banners')">
+      <span class="banner-thumb-order">${i+1}</span>
+      <div class="banner-thumb-title">${esc(b.title).replace(/\n/g,'<br>')}</div>
+      ${!b.active ? '<div style="position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-size:11px;color:#999">已停用</div>' : ''}
+    </div>`).join('');
+
+  // products table
+  const tbody = document.getElementById('dash-product-tbody');
+  tbody.innerHTML = products.sort((a,b)=>a.order-b.order).map(p => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <img class="thumb" src="${esc(p.image)}" alt="" onerror="this.style.display='none'">
+        <span style="font-weight:600;color:var(--brown)">${esc(p.name)}</span>
+      </div></td>
+      <td style="color:var(--gold);font-weight:700">NT$${p.price}</td>
+      <td><span class="tag-badge ${p.active?'tag-active':'tag-hidden'}">${p.active?'上架中':'已下架'}</span></td>
+    </tr>`).join('');
+}
+
+// ── Banners Panel ──
+function renderBannersPanel() {
+  const banners = getBanners();
+  const tbody = document.getElementById('banners-tbody');
+  document.getElementById('banners-empty').style.display = banners.length ? 'none' : '';
+  tbody.innerHTML = banners.map((b,i) => `
+    <tr id="brow-${b.id}">
+      <td><span class="drag-handle">⠿</span></td>
+      <td>
+        <div style="width:72px;height:44px;border-radius:8px;background:${b.gradient||GRADIENTS[0]};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+          ${b.illustration ? `<img src="${esc(b.illustration)}" style="width:100%;height:100%;object-fit:cover;opacity:0.7">` : '<span style="font-size:18px">🖼</span>'}
+        </div>
+      </td>
+      <td style="font-weight:600;color:var(--brown);max-width:180px">${esc(b.title).replace(/\n/g,'<br>')}</td>
+      <td><span class="tag-badge tag-slide">${esc(b.tag)}</span></td>
+      <td><span class="tag-badge ${b.active?'tag-active':'tag-hidden'}">${b.active?'顯示中':'已停用'}</span></td>
+      <td>
+        <div class="action-btns">
+          ${i>0?`<button class="btn-icon btn-order" onclick="moveBanner(${b.id},-1)" title="上移">↑</button>`:''}
+          ${i<banners.length-1?`<button class="btn-icon btn-order" onclick="moveBanner(${b.id},1)" title="下移">↓</button>`:''}
+          <button class="btn-icon btn-toggle ${b.active?'':'off'}" onclick="toggleBanner(${b.id})">${b.active?'停用':'啟用'}</button>
+          <button class="btn-icon btn-edit" onclick="openBannerModal(${b.id})" title="編輯">✏</button>
+          <button class="btn-icon btn-delete" onclick="confirmDelete('banner',${b.id},'${esc(b.title).replace(/\n/g,' ')}')" title="刪除">🗑</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function moveBanner(id, dir) {
+  const banners = getBanners();
+  const i = banners.findIndex(b=>b.id===id);
+  if (i < 0) return;
+  const ni = i + dir;
+  if (ni < 0 || ni >= banners.length) return;
+  [banners[i], banners[ni]] = [banners[ni], banners[i]];
+  saveBanners(banners);
+  renderBannersPanel();
+  updateBadges();
+  showToast('順序已更新');
+}
+
+function toggleBanner(id) {
+  const banners = getBanners();
+  const b = banners.find(x=>x.id===id);
+  if (b) { b.active = !b.active; saveBanners(banners); }
+  renderBannersPanel();
+  updateBadges();
+  showToast(b.active ? '橫幅已啟用' : '橫幅已停用');
+}
+
+// ── Products Panel ──
+function renderProductsPanel() {
+  const allProducts = getProducts().sort((a,b)=>a.order-b.order);
+  const cats = getCategories().sort((a,b)=>a.order-b.order);
+
+  // filter bar
+  const filterBar = document.getElementById('products-cat-filter');
+  filterBar.innerHTML =
+    `<button class="cat-filter-btn${productFilterCat===null?' active':''}" onclick="setProductFilter(null)">全部 (${allProducts.length})</button>` +
+    cats.map(c => {
+      const cnt = allProducts.filter(p=>p.categoryId===c.id).length;
+      return `<button class="cat-filter-btn${productFilterCat===c.id?' active':''}" onclick="setProductFilter(${c.id})" style="${productFilterCat===c.id?'':''}">
+        ${esc(c.name)} (${cnt})
+      </button>`;
+    }).join('') +
+    `<button class="cat-filter-btn${productFilterCat===-1?' active':''}" onclick="setProductFilter(-1)">未分類 (${allProducts.filter(p=>!p.categoryId).length})</button>`;
+
+  const products = productFilterCat === null ? allProducts
+    : productFilterCat === -1 ? allProducts.filter(p=>!p.categoryId)
+    : allProducts.filter(p=>p.categoryId===productFilterCat);
+
+  const tbody = document.getElementById('products-tbody');
+  document.getElementById('products-empty').style.display = products.length ? 'none' : '';
+
+  tbody.innerHTML = products.map((p,i) => {
+    const cat = cats.find(c=>c.id===p.categoryId);
+    return `<tr>
+      <td><span class="drag-handle">⠿</span></td>
+      <td>
+        ${p.image ? `<img class="thumb" src="${esc(p.image)}" alt="" onerror="this.style.background='var(--cream-dark)';this.src=''">` : '<div class="thumb-placeholder">🍪</div>'}
+      </td>
+      <td style="font-weight:600;color:var(--brown)">${esc(p.name)}</td>
+      <td style="color:var(--gold);font-weight:700">NT$${p.price}</td>
+      <td>${cat ? `<span class="cat-chip" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;padding:3px 10px">${esc(cat.name)}</span>` : '<span style="color:var(--brown-light);font-size:12px">未分類</span>'}</td>
+      <td><span class="tag-badge ${p.active?'tag-active':'tag-hidden'}">${p.active?'上架中':'已下架'}</span></td>
+      <td>
+        <div class="action-btns">
+          ${i>0?`<button class="btn-icon btn-order" onclick="moveProduct(${p.id},-1)">↑</button>`:''}
+          ${i<products.length-1?`<button class="btn-icon btn-order" onclick="moveProduct(${p.id},1)">↓</button>`:''}
+          <button class="btn-icon btn-toggle ${p.active?'':'off'}" onclick="toggleProduct(${p.id})">${p.active?'下架':'上架'}</button>
+          <button class="btn-icon btn-edit" onclick="openProductModal(${p.id})">✏</button>
+          <button class="btn-icon btn-delete" onclick="confirmDelete('product',${p.id},'${esc(p.name)}')">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function setProductFilter(catId) {
+  productFilterCat = catId;
+  renderProductsPanel();
+}
+
+function moveProduct(id, dir) {
+  const products = getProducts().sort((a,b)=>a.order-b.order);
+  const i = products.findIndex(p=>p.id===id);
+  if (i < 0) return;
+  const ni = i + dir;
+  if (ni < 0 || ni >= products.length) return;
+  [products[i].order, products[ni].order] = [products[ni].order, products[i].order];
+  saveProducts(products);
+  renderProductsPanel();
+  showToast('順序已更新');
+}
+
+function toggleProduct(id) {
+  const products = getProducts();
+  const p = products.find(x=>x.id===id);
+  if (p) { p.active = !p.active; saveProducts(products); }
+  renderProductsPanel();
+  updateBadges();
+  showToast(p.active ? '商品已上架' : '商品已下架');
+}
+
+// ── Banner Modal ──
+function buildGradientPicker() {
+  document.getElementById('gradient-picker').innerHTML = GRADIENTS.map((g,i) =>
+    `<div class="gradient-swatch${i===0?' selected':''}" style="background:${g}" data-g="${g}" onclick="selectGradient(this,'${g}')"></div>`
+  ).join('');
+}
+
+function selectGradient(el, g) {
+  document.querySelectorAll('.gradient-swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedGradient = g;
+}
+
+function openBannerModal(id) {
+  editingBannerId = id;
+  document.getElementById('banner-modal-title').textContent = id ? '編輯橫幅' : '新增橫幅';
+  selectedGradient = GRADIENTS[0];
+  document.querySelectorAll('.gradient-swatch').forEach((s,i)=>s.classList.toggle('selected',i===0));
+
+  if (id) {
+    const b = getBanners().find(x=>x.id===id);
+    if (!b) return;
+    document.getElementById('b-tag').value = b.tag || '';
+    document.getElementById('b-title').value = b.title || '';
+    document.getElementById('b-desc').value = b.desc || '';
+    document.getElementById('b-cta1').value = b.cta1 || '';
+    document.getElementById('b-cta2').value = b.cta2 || '';
+    document.getElementById('b-illus').value = b.illustration || '';
+    document.getElementById('b-bg').value = b.bgImage || '';
+    document.getElementById('b-active').value = b.active ? '1' : '0';
+    previewImg('b-illus','b-illus-preview');
+    previewImg('b-bg','b-bg-preview');
+    selectedGradient = b.gradient || GRADIENTS[0];
+    document.querySelectorAll('.gradient-swatch').forEach(s=>{
+      s.classList.toggle('selected', s.dataset.g === selectedGradient);
+    });
+  } else {
+    ['b-tag','b-title','b-desc','b-cta1','b-cta2','b-illus','b-bg'].forEach(id=>{document.getElementById(id).value='';});
+    document.getElementById('b-cta1').value = '立即選購';
+    document.getElementById('b-active').value = '1';
+    document.getElementById('b-illus-preview').classList.remove('show');
+    document.getElementById('b-bg-preview').classList.remove('show');
+  }
+  document.getElementById('banner-modal-overlay').classList.add('active');
+}
+
+function saveBanner() {
+  const banners = getBanners();
+  const data = {
+    tag: document.getElementById('b-tag').value.trim(),
+    title: document.getElementById('b-title').value.trim(),
+    desc: document.getElementById('b-desc').value.trim(),
+    cta1: document.getElementById('b-cta1').value.trim(),
+    cta2: document.getElementById('b-cta2').value.trim(),
+    illustration: document.getElementById('b-illus').value.trim(),
+    bgImage: document.getElementById('b-bg').value.trim(),
+    active: document.getElementById('b-active').value === '1',
+    gradient: selectedGradient
+  };
+  if (!data.title) { showToast('請填寫標題'); return; }
+
+  if (editingBannerId) {
+    const i = banners.findIndex(b=>b.id===editingBannerId);
+    if (i>=0) banners[i] = {...banners[i], ...data};
+  } else {
+    banners.push({ id: nextId(banners), ...data });
+  }
+  saveBanners(banners);
+  closeModal('banner');
+  renderBannersPanel();
+  updateBadges();
+  showToast(editingBannerId ? '橫幅已更新 ✓' : '橫幅已新增 ✓');
+}
+
+// ── Product Modal ──
+function openProductModal(id) {
+  editingProductId = id;
+  document.getElementById('product-modal-title').textContent = id ? '編輯商品' : '新增商品';
+
+  if (id) {
+    const p = getProducts().find(x=>x.id===id);
+    if (!p) return;
+    document.getElementById('p-name').value = p.name || '';
+    document.getElementById('p-price').value = p.price || '';
+    document.getElementById('p-desc').value = p.desc || '';
+    document.getElementById('p-image').value = p.image || '';
+    document.getElementById('p-badge').value = p.badge || '';
+    document.getElementById('p-badge-color').value = p.badgeColor || '#f2b8c6';
+    document.getElementById('p-badge-color-picker').value = p.badgeColor || '#f2b8c6';
+    document.getElementById('p-active').value = p.active ? '1' : '0';
+    populateCategorySelect(p.categoryId || null);
+    previewImg('p-image','p-img-preview');
+  } else {
+    ['p-name','p-price','p-desc','p-image','p-badge'].forEach(id=>{document.getElementById(id).value='';});
+    document.getElementById('p-badge-color').value = '#f2b8c6';
+    document.getElementById('p-badge-color-picker').value = '#f2b8c6';
+    document.getElementById('p-active').value = '1';
+    populateCategorySelect(null);
+    document.getElementById('p-img-preview').classList.remove('show');
+  }
+  document.getElementById('product-modal-overlay').classList.add('active');
+}
+
+function saveProduct() {
+  const products = getProducts();
+  const catVal = document.getElementById('p-category').value;
+  const data = {
+    name: document.getElementById('p-name').value.trim(),
+    price: parseInt(document.getElementById('p-price').value) || 0,
+    desc: document.getElementById('p-desc').value.trim(),
+    image: document.getElementById('p-image').value.trim(),
+    badge: document.getElementById('p-badge').value.trim(),
+    badgeColor: document.getElementById('p-badge-color').value.trim(),
+    active: document.getElementById('p-active').value === '1',
+    categoryId: catVal ? parseInt(catVal) : null,
+  };
+  if (!data.name) { showToast('請填寫商品名稱'); return; }
+  if (!data.price) { showToast('請填寫售價'); return; }
+
+  if (editingProductId) {
+    const i = products.findIndex(p=>p.id===editingProductId);
+    if (i>=0) products[i] = {...products[i], ...data};
+  } else {
+    const maxOrder = products.length ? Math.max(...products.map(p=>p.order)) : -1;
+    products.push({ id: nextId(products), ...data, order: maxOrder + 1 });
+  }
+  saveProducts(products);
+  closeModal('product');
+  renderProductsPanel();
+  updateBadges();
+  showToast(editingProductId ? '商品已更新 ✓' : '商品已新增 ✓');
+}
+
+// ── Delete confirm ──
+let pendingDelete = null;
+function confirmDelete(type, id, name) {
+  pendingDelete = { type, id };
+  document.getElementById('confirm-title').textContent = `確認刪除${type==='banner'?'橫幅':'商品'}？`;
+  document.getElementById('confirm-msg').textContent = `「${name}」刪除後無法復原。`;
+  document.getElementById('confirm-ok').onclick = doDelete;
+  document.getElementById('confirm-overlay').classList.add('active');
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('active');
+  pendingDelete = null;
+}
+function doDelete() {
+  if (!pendingDelete) return;
+  const { type, id } = pendingDelete;
+  if (type === 'banner') {
+    saveBanners(getBanners().filter(b=>b.id!==id));
+    renderBannersPanel();
+  } else {
+    saveProducts(getProducts().filter(p=>p.id!==id));
+    renderProductsPanel();
+  }
+  updateBadges();
+  closeConfirm();
+  showToast('已刪除');
+}
+
+// ── Helpers ──
+function closeModal(type) {
+  document.getElementById(type+'-modal-overlay').classList.remove('active');
+}
+
+function previewImg(inputId, previewId) {
+  const val = document.getElementById(inputId).value.trim();
+  const img = document.getElementById(previewId);
+  if (val) { img.src = val; img.classList.add('show'); }
+  else img.classList.remove('show');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastT;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// init if already logged in via session
+if (sessionStorage.getItem('bb_admin') === '1') initApp();
+</script>
+</body>
+</html>

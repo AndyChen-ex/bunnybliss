@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品列表 | Bunny Bliss</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #fdf8f3; --cream-dark: #f5ece1;
+      --gold: #c9956b; --gold-dark: #a97848; --gold-light: #e8c4a0;
+      --pink: #f2b8c6; --pink-light: #fde8ef;
+      --brown: #3d2b1f; --brown-mid: #7a5c4f; --brown-light: #b08878;
+      --white: #ffffff;
+      --shadow: 0 4px 20px rgba(61,43,31,0.08);
+      --shadow-hover: 0 8px 32px rgba(61,43,31,0.14);
+      --radius: 16px; --radius-sm: 8px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: var(--cream); color: var(--brown); }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(253,248,243,0.96); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--cream-dark); transition: box-shadow 0.3s;
+    }
+    header.scrolled { box-shadow: var(--shadow); }
+    .header-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      height: 84px; display: flex; align-items: center; gap: 32px;
+    }
+    .logo { flex-shrink: 0; cursor: pointer; text-decoration: none; }
+    .logo img { height: 62px; width: auto; }
+    nav { display: flex; gap: 28px; flex: 1; }
+    nav a {
+      text-decoration: none; color: var(--brown-mid); font-size: 14px;
+      font-weight: 500; transition: color 0.2s; white-space: nowrap;
+    }
+    nav a:hover, nav a.active { color: var(--gold); }
+    .header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .btn-text { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 13px; color: var(--brown-mid); font-weight: 500; padding: 6px 4px; transition: color 0.2s; }
+    .btn-text:hover { color: var(--gold); }
+    .btn-divider { color: var(--gold-light); font-size: 13px; }
+    .btn-cart {
+      background: none; border: 2px solid var(--gold); cursor: pointer;
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; transition: background 0.2s;
+    }
+    .btn-cart:hover { background: var(--gold); }
+    .btn-cart:hover svg path, .btn-cart:hover svg line { stroke: var(--white); }
+    .btn-cart svg { width: 18px; height: 18px; }
+    .btn-cart svg path, .btn-cart svg line { stroke: var(--gold); stroke-width: 1.8; fill: none; transition: stroke 0.2s; }
+    .cart-badge {
+      position: absolute; top: -4px; right: -4px;
+      background: var(--pink); color: var(--brown); font-size: 10px; font-weight: 700;
+      width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center;
+    }
+    .cart-badge.visible { display: flex; }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+      max-width: 1200px; margin: 0 auto; padding: 16px 24px 0;
+      font-size: 13px; color: var(--brown-light); display: flex; gap: 6px; align-items: center;
+    }
+    .breadcrumb a { color: var(--brown-light); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--gold); }
+    .breadcrumb span { color: var(--gold); }
+
+    /* ── Layout ── */
+    .shop-layout {
+      max-width: 1200px; margin: 0 auto; padding: 24px 24px 72px;
+      display: flex; gap: 32px; align-items: flex-start;
+    }
+
+    /* ── Left Sidebar ── */
+    .shop-sidebar {
+      flex-shrink: 0; width: 220px;
+      position: sticky; top: 104px;
+    }
+    .sidebar-section { margin-bottom: 28px; }
+    .sidebar-section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--brown-light); margin-bottom: 12px;
+    }
+    .cat-nav { display: flex; flex-direction: column; gap: 2px; }
+    .cat-nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; border-radius: 10px; cursor: pointer;
+      font-size: 14px; color: var(--brown-mid); font-weight: 500;
+      border: none; background: none; font-family: inherit;
+      transition: all 0.15s; text-align: left; width: 100%;
+    }
+    .cat-nav-item:hover { background: var(--cream-dark); color: var(--brown); }
+    .cat-nav-item.active { background: var(--gold); color: var(--white); font-weight: 700; }
+    .cat-nav-item .cat-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .cat-nav-item .cat-count {
+      margin-left: auto; font-size: 11px; opacity: 0.7;
+    }
+    .cat-nav-divider { height: 1px; background: var(--cream-dark); margin: 6px 0; }
+
+    /* price filter */
+    .price-range { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .price-range input {
+      width: 80px; padding: 8px 10px; border: 1.5px solid var(--cream-dark);
+      border-radius: var(--radius-sm); font-family: inherit; font-size: 13px;
+      color: var(--brown); outline: none; transition: border-color 0.2s;
+    }
+    .price-range input:focus { border-color: var(--gold); }
+    .price-range span { font-size: 13px; color: var(--brown-light); }
+    .btn-filter {
+      width: 100%; margin-top: 10px; background: var(--cream-dark); color: var(--brown-mid);
+      border: none; padding: 9px; border-radius: 10px; font-family: inherit;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-filter:hover { background: var(--gold); color: var(--white); }
+
+    /* ── Main area ── */
+    .shop-main { flex: 1; min-width: 0; }
+
+    .shop-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .shop-topbar h2 {
+      font-family: 'Noto Serif TC', serif; font-size: 20px; font-weight: 600;
+    }
+    .shop-topbar .count { font-size: 13px; color: var(--brown-light); margin-left: 8px; font-weight: 400; }
+
+    .sort-select {
+      padding: 8px 12px; border: 1.5px solid var(--cream-dark);
+      border-radius: 20px; font-family: inherit; font-size: 13px;
+      color: var(--brown-mid); background: var(--white); outline: none; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .sort-select:focus { border-color: var(--gold); }
+
+    /* ── Product Grid ── */
+    .products-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px;
+    }
+    .product-card {
+      background: var(--white); border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow); transition: transform 0.25s, box-shadow 0.25s;
+      cursor: pointer; text-decoration: none; color: inherit; display: block;
+    }
+    .product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
+    .product-img-wrap { position: relative; padding-top: 100%; overflow: hidden; background: var(--cream); }
+    .product-img-wrap img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; transition: transform 0.4s;
+    }
+    .product-card:hover .product-img-wrap img { transform: scale(1.06); }
+    .product-badge {
+      position: absolute; top: 10px; left: 10px;
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; letter-spacing: 0.3px;
+    }
+    .product-cat-tag {
+      position: absolute; bottom: 10px; right: 10px;
+      font-size: 10px; font-weight: 700; padding: 3px 8px;
+      border-radius: 20px; backdrop-filter: blur(4px);
+    }
+    .product-info { padding: 16px 16px 20px; }
+    .product-name { font-family: 'Noto Serif TC', serif; font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+    .product-desc { font-size: 12px; color: var(--brown-light); line-height: 1.6; margin-bottom: 12px; min-height: 36px; }
+    .product-footer { display: flex; align-items: center; justify-content: space-between; }
+    .product-price { font-size: 18px; font-weight: 700; color: var(--gold); }
+    .product-price small { font-size: 12px; font-weight: 400; color: var(--brown-light); }
+    .btn-add-cart {
+      background: var(--gold); color: var(--white); border: none;
+      width: 34px; height: 34px; border-radius: 50%; font-size: 18px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.15s; line-height: 1;
+    }
+    .btn-add-cart:hover { background: var(--gold-dark); transform: scale(1.1); }
+
+    .products-empty {
+      text-align: center; padding: 60px 24px; color: var(--brown-light);
+    }
+    .products-empty .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+
+    /* ── Cart Drawer (same as index) ── */
+    .cart-drawer {
+      position: fixed; top: 0; right: 0; width: 380px; height: 100vh;
+      background: var(--white); z-index: 200;
+      box-shadow: -8px 0 40px rgba(61,43,31,0.12);
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+    .cart-drawer-overlay {
+      position: fixed; inset: 0; background: rgba(61,43,31,0.35); z-index: 199;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .cart-drawer-overlay.active { opacity: 1; pointer-events: all; }
+    .cart-header {
+      padding: 24px 24px 20px; border-bottom: 1px solid var(--cream-dark);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .cart-header h3 { font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 600; }
+    .modal-close {
+      background: var(--cream-dark); border: none; width: 32px; height: 32px;
+      border-radius: 50%; cursor: pointer; font-size: 16px; color: var(--brown-mid);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cart-items { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .cart-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--brown-light); gap: 12px; text-align: center; }
+    .cart-empty-icon { font-size: 48px; opacity: 0.4; }
+    .cart-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--cream-dark); }
+    .cart-item-img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: var(--cream); flex-shrink: 0; }
+    .cart-item-info { flex: 1; }
+    .cart-item-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .cart-item-price { font-size: 13px; color: var(--gold); font-weight: 700; margin-bottom: 8px; }
+    .cart-item-qty { display: flex; align-items: center; gap: 8px; }
+    .qty-btn { background: var(--cream-dark); border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .qty-btn:hover { background: var(--gold-light); }
+    .qty-num { font-size: 14px; font-weight: 600; min-width: 20px; text-align: center; }
+    .cart-item-remove { background: none; border: none; cursor: pointer; color: var(--brown-light); font-size: 16px; padding: 4px; }
+    .cart-item-remove:hover { color: #e05555; }
+    .cart-footer { padding: 20px 24px; border-top: 1px solid var(--cream-dark); flex-shrink: 0; }
+    .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .cart-total span:first-child { font-size: 14px; color: var(--brown-mid); }
+    .cart-total-price { font-size: 22px; font-weight: 700; color: var(--gold); }
+    .btn-checkout { width: 100%; background: var(--gold); color: var(--white); border: none; padding: 16px; border-radius: 14px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .btn-checkout:hover { background: var(--gold-dark); }
+
+    /* Auth modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(61,43,31,0.45); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal { background: var(--white); border-radius: 24px; padding: 36px; width: 100%; max-width: 420px; position: relative; transform: translateY(16px) scale(0.97); transition: transform 0.25s; max-height: 90vh; overflow-y: auto; }
+    .modal-overlay.active .modal { transform: none; }
+    .auth-logo { text-align: center; margin-bottom: 24px; }
+    .auth-tabs { display: flex; background: var(--cream-dark); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+    .auth-tab { flex: 1; padding: 10px; border: none; background: none; border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 500; color: var(--brown-mid); cursor: pointer; transition: all 0.2s; }
+    .auth-tab.active { background: var(--white); color: var(--brown); font-weight: 700; box-shadow: 0 2px 8px rgba(61,43,31,0.08); }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--brown-mid); letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+    .form-group input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--cream-dark); border-radius: var(--radius-sm); font-family: inherit; font-size: 14px; color: var(--brown); background: var(--white); outline: none; transition: border-color 0.2s; }
+    .form-group input:focus { border-color: var(--gold); }
+    .btn-submit { width: 100%; background: var(--gold); color: var(--white); border: none; padding: 14px; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+    .btn-submit:hover { background: var(--gold-dark); }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--brown); color: var(--white); padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 500; z-index: 300; transition: transform 0.3s; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Mobile */
+    .mobile-cat-toggle { display: none; }
+    @media (max-width: 768px) {
+      nav { display: none; }
+      .shop-sidebar { display: none; width: 0; }
+      .shop-sidebar.open { display: block; position: fixed; inset: 0; top: 84px; z-index: 50; background: var(--cream); width: 260px; overflow-y: auto; padding: 20px 16px; box-shadow: 4px 0 20px rgba(61,43,31,0.15); }
+      .mobile-cat-toggle { display: flex; align-items: center; gap: 8px; background: var(--gold); color: var(--white); border: none; padding: 9px 16px; border-radius: 20px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+      .cart-drawer { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header id="site-header">
+  <div class="header-inner">
+    <a class="logo" href="index.html"><img src="logo.png" alt="Bunny Bliss"></a>
+    <nav>
+      <a href="index.html">首頁</a>
+      <a href="products.html" class="active">商品</a>
+      <a href="index.html#about">關於我們</a>
+      <a href="#">購物說明</a>
+      <a href="#">聯絡我們</a>
+    </nav>
+    <div class="header-actions">
+      <button class="mobile-cat-toggle" onclick="toggleSidebar()">🏷 分類</button>
+      <button class="btn-text" onclick="openAuth('login')">會員登入</button>
+      <span class="btn-divider">/</span>
+      <button class="btn-text" onclick="openAuth('register')">註冊</button>
+      <button class="btn-cart" onclick="openCart()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6" stroke-linecap="round"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="cart-badge" id="cart-badge">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <a href="index.html">首頁</a> › <span>商品列表</span>
+</div>
+
+<div class="shop-layout">
+
+  <!-- Left Sidebar -->
+  <aside class="shop-sidebar" id="shop-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">商品分類</div>
+      <div class="cat-nav" id="cat-nav"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">價格區間</div>
+      <div class="price-range">
+        <input type="number" id="price-min" placeholder="最低" min="0">
+        <span>—</span>
+        <input type="number" id="price-max" placeholder="最高" min="0">
+      </div>
+      <button class="btn-filter" onclick="applyFilter()">套用篩選</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="shop-main">
+    <div class="shop-topbar">
+      <div>
+        <span id="current-cat-title" style="font-family:'Noto Serif TC',serif;font-size:20px;font-weight:600">全部商品</span>
+        <span class="count" id="product-count"></span>
+      </div>
+      <select class="sort-select" id="sort-select" onchange="renderProducts()">
+        <option value="default">預設排序</option>
+        <option value="price-asc">價格：低到高</option>
+        <option value="price-desc">價格：高到低</option>
+        <option value="name">名稱排序</option>
+      </select>
+    </div>
+    <div class="products-grid" id="products-grid"></div>
+  </div>
+
+</div>
+
+<!-- Cart Drawer -->
+<div class="cart-drawer-overlay" id="cart-overlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-header">
+    <h3>購物車</h3>
+    <button class="modal-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cart-items-list"></div>
+  <div class="cart-footer" id="cart-footer" style="display:none">
+    <div class="cart-total">
+      <span>小計</span>
+      <span class="cart-total-price" id="cart-total-price">NT$0</span>
+    </div>
+    <button class="btn-checkout">前往結帳 →</button>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-overlay" onclick="closeOverlay('auth-overlay')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" style="position:absolute;top:16px;right:16px" onclick="closeOverlay('auth-overlay')">✕</button>
+    <div class="auth-logo"><div style="font-family:'Noto Serif TC',serif;font-size:22px;font-weight:600;color:var(--gold);">🐰 Bunny Bliss</div></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">會員登入</button>
+      <button class="auth-tab" id="tab-register" onclick="switchTab('register')">新會員註冊</button>
+    </div>
+    <div class="auth-panel active" id="panel-login">
+      <div class="form-group"><label>電子信箱</label><input type="email" placeholder="請輸入電子信箱"></div>
+      <div class="form-group"><label>密碼</label><input type="password" placeholder="請輸入密碼"></div>
+      <button class="btn-submit" onclick="closeOverlay('auth-overlay');showToast('登入成功！🐰')">登入</button>
+    </div>
+    <div class="auth-panel" id="panel-register">
+      <div class="form-group"><label>姓名</label><input type="text" placeholder="請輸入真實姓名"></div>
+      <div class="form-group"><label>電子信箱</label><input type="email" placeholder="請輸入電子信箱"></div>
+      <div class="form-group"><label>密碼</label><input type="password" placeholder="至少 8 個字元"></div>
+      <button class="btn-submit" onclick="closeOverlay('auth-overlay');showToast('註冊成功！🎉')">立即註冊</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_CATEGORIES = [
+  {id:1,name:'捲捲棒系列',color:'#f2b8c6',order:0},
+  {id:2,name:'千層酥系列',color:'#c4d4a8',order:1},
+  {id:3,name:'季節限定',color:'#d4a8c7',order:2},
+  {id:4,name:'禮盒組合',color:'#a8c4d4',order:3},
+];
+const DEFAULT_PRODUCTS = [
+  {id:1,active:true,name:'捲捲棒（原味）',price:280,desc:'以法式酥皮工藝手工製作，層層酥脆、入口即化，撒上細砂糖烤出焦糖香氣',image:'捲捲棒.jpg',badge:'🔥 人氣首選',badgeColor:'#f2b8c6',order:0,categoryId:1},
+  {id:2,active:true,name:'巧克力捲捲棒',price:300,desc:'採用比利時可可粉融入酥皮，深邃苦甜巧克力香氣，層次豐富令人回味無窮',image:'巧克力捲捲棒.jpg',badge:'✨ 新品上市',badgeColor:'#d4a8c7',order:1,categoryId:1},
+  {id:3,active:true,name:'紅茶烏龍千層酥',price:320,desc:'精選台灣烏龍茶融合阿薩姆紅茶，撒上杏仁片烘焙，千層酥皮帶來絕佳口感',image:'紅茶烏龍千層.jpg',badge:'🍵 季節限定',badgeColor:'#c4d4a8',order:2,categoryId:2},
+];
+
+function getCategories(){const r=localStorage.getItem('bb_categories');return r?JSON.parse(r):DEFAULT_CATEGORIES;}
+function getProducts(){const r=localStorage.getItem('bb_products');return r?JSON.parse(r):DEFAULT_PRODUCTS;}
+
+// URL param
+const params = new URLSearchParams(location.search);
+let activeCat = params.get('cat') ? parseInt(params.get('cat')) : null;
+let priceMin = null, priceMax = null;
+
+function buildCatNav() {
+  const cats = getCategories().sort((a,b)=>a.order-b.order);
+  const products = getProducts().filter(p=>p.active);
+  const nav = document.getElementById('cat-nav');
+  nav.innerHTML =
+    `<button class="cat-nav-item${activeCat===null?' active':''}" onclick="setCat(null)">
+      <span class="cat-dot" style="background:var(--gold)"></span>
+      全部商品 <span class="cat-count">${products.length}</span>
+    </button>
+    <div class="cat-nav-divider"></div>` +
+    cats.map(c=>{
+      const cnt = products.filter(p=>p.categoryId===c.id).length;
+      return `<button class="cat-nav-item${activeCat===c.id?' active':''}" onclick="setCat(${c.id})">
+        <span class="cat-dot" style="background:${c.color}"></span>
+        ${esc(c.name)} <span class="cat-count">${cnt}</span>
+      </button>`;
+    }).join('') +
+    `<div class="cat-nav-divider"></div>
+    <button class="cat-nav-item${activeCat===-1?' active':''}" onclick="setCat(-1)">
+      <span class="cat-dot" style="background:var(--cream-dark);border:1px solid var(--brown-light)"></span>
+      未分類 <span class="cat-count">${products.filter(p=>!p.categoryId).length}</span>
+    </button>`;
+}
+
+function setCat(id) {
+  activeCat = id;
+  buildCatNav();
+  renderProducts();
+  const url = new URL(location.href);
+  id !== null ? url.searchParams.set('cat', id) : url.searchParams.delete('cat');
+  history.replaceState({}, '', url);
+  document.getElementById('shop-sidebar').classList.remove('open');
+}
+
+function applyFilter() {
+  const mn = document.getElementById('price-min').value;
+  const mx = document.getElementById('price-max').value;
+  priceMin = mn ? parseInt(mn) : null;
+  priceMax = mx ? parseInt(mx) : null;
+  renderProducts();
+}
+
+function renderProducts() {
+  let products = getProducts().filter(p=>p.active);
+  const cats = getCategories();
+
+  if (activeCat === null) { /* all */ }
+  else if (activeCat === -1) products = products.filter(p=>!p.categoryId);
+  else products = products.filter(p=>p.categoryId===activeCat);
+
+  if (priceMin !== null) products = products.filter(p=>p.price>=priceMin);
+  if (priceMax !== null) products = products.filter(p=>p.price<=priceMax);
+
+  const sort = document.getElementById('sort-select').value;
+  if (sort==='price-asc') products.sort((a,b)=>a.price-b.price);
+  else if (sort==='price-desc') products.sort((a,b)=>b.price-a.price);
+  else if (sort==='name') products.sort((a,b)=>a.name.localeCompare(b.name));
+  else products.sort((a,b)=>a.order-b.order);
+
+  const catObj = activeCat && activeCat > 0 ? cats.find(c=>c.id===activeCat) : null;
+  document.getElementById('current-cat-title').textContent = catObj ? catObj.name : '全部商品';
+  document.getElementById('product-count').textContent = `共 ${products.length} 件`;
+
+  const grid = document.getElementById('products-grid');
+  if (!products.length) {
+    grid.innerHTML = `<div class="products-empty" style="grid-column:1/-1"><div class="icon">🍪</div><p>此分類目前沒有商品</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = products.map(p => {
+    const cat = cats.find(c=>c.id===p.categoryId);
+    return `<a class="product-card" href="product-detail.html?id=${p.id}">
+      <div class="product-img-wrap">
+        <img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.style.display='none'">
+        ${p.badge?`<span class="product-badge" style="background:${esc(p.badgeColor||'#f2b8c6')};color:#3d2b1f">${esc(p.badge)}</span>`:''}
+        ${cat?`<span class="product-cat-tag" style="background:${cat.color}cc;color:#3d2b1f">${esc(cat.name)}</span>`:''}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${esc(p.name)}</div>
+        <div class="product-desc">${esc(p.desc)}</div>
+        <div class="product-footer">
+          <div class="product-price">NT$${p.price} <small>/ 盒</small></div>
+          <button class="btn-add-cart" onclick="event.preventDefault();event.stopPropagation();addToCart({name:'${esc(p.name)}',price:${p.price},image:'${esc(p.image)}'})">+</button>
+        </div>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+// Cart
+let cart = JSON.parse(localStorage.getItem('bb_cart')||'[]');
+function saveCart(){localStorage.setItem('bb_cart',JSON.stringify(cart));}
+function updateCartBadge(){const b=document.getElementById('cart-badge');const t=cart.reduce((s,i)=>s+i.qty,0);b.textContent=t;b.classList.toggle('visible',t>0);}
+function renderCart(){
+  const list=document.getElementById('cart-items-list');const footer=document.getElementById('cart-footer');
+  if(!cart.length){list.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>購物車是空的</p></div>';footer.style.display='none';return;}
+  footer.style.display='block';
+  list.innerHTML=cart.map((item,i)=>`<div class="cart-item"><img class="cart-item-img" src="${esc(item.image)}" alt=""><div class="cart-item-info"><div class="cart-item-name">${esc(item.name)}</div><div class="cart-item-price">NT$${item.price}</div><div class="cart-item-qty"><button class="qty-btn" onclick="changeQty(${i},-1)">−</button><span class="qty-num">${item.qty}</span><button class="qty-btn" onclick="changeQty(${i},1)">+</button></div></div><button class="cart-item-remove" onclick="removeItem(${i})">🗑</button></div>`).join('');
+  document.getElementById('cart-total-price').textContent=`NT$${cart.reduce((s,i)=>s+i.price*i.qty,0)}`;
+}
+function addToCart(data){const ex=cart.find(i=>i.name===data.name);ex?ex.qty++:cart.push({...data,qty:1});saveCart();updateCartBadge();showToast(`已加入購物車：${data.name}`);}
+function changeQty(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);saveCart();updateCartBadge();renderCart();}
+function removeItem(i){cart.splice(i,1);saveCart();updateCartBadge();renderCart();}
+function openCart(){renderCart();document.getElementById('cart-drawer').classList.add('open');document.getElementById('cart-overlay').classList.add('active');document.body.style.overflow='hidden';}
+function closeCart(){document.getElementById('cart-drawer').classList.remove('open');document.getElementById('cart-overlay').classList.remove('active');document.body.style.overflow='';}
+
+// Auth
+function openAuth(tab){switchTab(tab);document.getElementById('auth-overlay').classList.add('active');document.body.style.overflow='hidden';}
+function switchTab(tab){document.getElementById('tab-login').classList.toggle('active',tab==='login');document.getElementById('tab-register').classList.toggle('active',tab==='register');document.getElementById('panel-login').classList.toggle('active',tab==='login');document.getElementById('panel-register').classList.toggle('active',tab==='register');}
+function closeOverlay(id){document.getElementById(id).classList.remove('active');document.body.style.overflow='';}
+function toggleSidebar(){document.getElementById('shop-sidebar').classList.toggle('open');}
+window.addEventListener('scroll',()=>document.getElementById('site-header').classList.toggle('scrolled',scrollY>10));
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2500);}
+
+buildCatNav();
+renderProducts();
+updateCartBadge();
+</script>
+</body>
+</html>

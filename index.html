@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bunny Bliss | 手工甜點</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #fdf8f3;
+      --cream-dark: #f5ece1;
+      --gold: #c9956b;
+      --gold-dark: #a97848;
+      --gold-light: #e8c4a0;
+      --pink: #f2b8c6;
+      --pink-light: #fde8ef;
+      --brown: #3d2b1f;
+      --brown-mid: #7a5c4f;
+      --brown-light: #b08878;
+      --white: #ffffff;
+      --shadow: 0 4px 20px rgba(61,43,31,0.08);
+      --shadow-hover: 0 8px 32px rgba(61,43,31,0.14);
+      --radius: 16px;
+      --radius-sm: 8px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: var(--cream); color: var(--brown); overflow-x: hidden; }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(253,248,243,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--cream-dark);
+      transition: box-shadow 0.3s;
+    }
+    header.scrolled { box-shadow: var(--shadow); }
+    .header-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      height: 84px; display: flex; align-items: center; gap: 32px;
+    }
+    .logo { flex-shrink: 0; cursor: pointer; }
+    .logo img { height: 62px; width: auto; }
+    nav { display: flex; gap: 28px; flex: 1; }
+    nav a {
+      text-decoration: none; color: var(--brown-mid); font-size: 14px;
+      font-weight: 500; letter-spacing: 0.3px; transition: color 0.2s; white-space: nowrap;
+    }
+    nav a:hover { color: var(--gold); }
+    .header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .btn-text {
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      font-size: 13px; color: var(--brown-mid); font-weight: 500; padding: 6px 4px;
+      transition: color 0.2s; white-space: nowrap;
+    }
+    .btn-text:hover { color: var(--gold); }
+    .btn-divider { color: var(--gold-light); font-size: 13px; }
+    .btn-cart {
+      background: none; border: 2px solid var(--gold); cursor: pointer;
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; transition: background 0.2s;
+    }
+    .btn-cart:hover { background: var(--gold); }
+    .btn-cart:hover svg path, .btn-cart:hover svg line { stroke: var(--white); }
+    .btn-cart svg { width: 18px; height: 18px; }
+    .btn-cart svg path, .btn-cart svg line { stroke: var(--gold); stroke-width: 1.8; fill: none; transition: stroke 0.2s; }
+    .cart-badge {
+      position: absolute; top: -4px; right: -4px;
+      background: var(--pink); color: var(--brown); font-size: 10px; font-weight: 700;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: none; align-items: center; justify-content: center;
+    }
+    .cart-badge.visible { display: flex; }
+
+    /* ── Hero Carousel ── */
+    .hero {
+      position: relative; width: 100%; overflow: hidden;
+      background: linear-gradient(135deg, #fde8d8 0%, #fdf3ec 50%, #fde8ef 100%);
+    }
+    .hero-slides { position: relative; min-height: 520px; }
+    .hero-slide {
+      position: absolute; inset: 0;
+      display: flex; align-items: center;
+      opacity: 0; transition: opacity 0.7s ease; pointer-events: none;
+      min-height: 520px;
+    }
+    .hero-slide.active { opacity: 1; pointer-events: all; position: relative; }
+    .hero-slide-bg {
+      position: absolute; inset: 0; object-fit: cover;
+      width: 100%; height: 100%; opacity: 0.15;
+    }
+    .hero-content {
+      position: relative; z-index: 1;
+      max-width: 1200px; margin: 0 auto; padding: 60px 24px;
+      display: flex; align-items: center; gap: 60px; width: 100%;
+    }
+    .hero-text { flex: 1; }
+    .hero-tag {
+      display: inline-block; background: var(--pink-light); color: var(--gold-dark);
+      font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+      padding: 5px 14px; border-radius: 20px; margin-bottom: 20px; text-transform: uppercase;
+    }
+    .hero-title {
+      font-family: 'Noto Serif TC', serif;
+      font-size: clamp(32px, 5vw, 52px); font-weight: 600; line-height: 1.3;
+      color: var(--brown); margin-bottom: 16px;
+    }
+    .hero-title em { color: var(--gold); font-style: normal; }
+    .hero-desc {
+      font-size: 15px; color: var(--brown-mid); line-height: 1.8;
+      margin-bottom: 32px; max-width: 420px;
+    }
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--gold); color: var(--white); border: none;
+      padding: 14px 32px; border-radius: 50px; font-family: inherit;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: background 0.2s, transform 0.15s; letter-spacing: 0.5px;
+    }
+    .btn-primary:hover { background: var(--gold-dark); transform: translateY(-1px); }
+    .btn-outline {
+      background: none; color: var(--gold); border: 2px solid var(--gold);
+      padding: 12px 28px; border-radius: 50px; font-family: inherit;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; letter-spacing: 0.5px;
+    }
+    .btn-outline:hover { background: var(--gold); color: var(--white); transform: translateY(-1px); }
+    .hero-visual { flex-shrink: 0; width: 340px; display: flex; justify-content: center; }
+    .hero-visual img {
+      width: 300px; height: 300px; object-fit: contain;
+      filter: drop-shadow(0 16px 32px rgba(201,149,107,0.25));
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+    }
+
+    /* Carousel controls */
+    .carousel-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      z-index: 10; background: rgba(255,255,255,0.85);
+      border: none; width: 44px; height: 44px; border-radius: 50%;
+      cursor: pointer; font-size: 16px; color: var(--brown-mid);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow); transition: all 0.2s;
+      backdrop-filter: blur(4px);
+    }
+    .carousel-arrow:hover { background: var(--gold); color: var(--white); }
+    .carousel-arrow.prev { left: 20px; }
+    .carousel-arrow.next { right: 20px; }
+    .carousel-dots {
+      position: absolute; bottom: 20px; left: 50%;
+      transform: translateX(-50%); display: flex; gap: 8px; z-index: 10;
+    }
+    .carousel-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(201,149,107,0.35); border: none; cursor: pointer;
+      transition: all 0.3s; padding: 0;
+    }
+    .carousel-dot.active { background: var(--gold); width: 24px; border-radius: 4px; }
+
+    /* ── Sections ── */
+    .section { max-width: 1200px; margin: 0 auto; padding: 72px 24px; }
+    .section-header { text-align: center; margin-bottom: 48px; }
+    .section-tag {
+      display: inline-block; color: var(--gold); font-size: 12px;
+      font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .section-title {
+      font-family: 'Noto Serif TC', serif; font-size: 28px;
+      font-weight: 600; color: var(--brown); margin-bottom: 12px;
+    }
+    .section-desc {
+      font-size: 14px; color: var(--brown-light); line-height: 1.8;
+      max-width: 480px; margin: 0 auto;
+    }
+
+    /* ── Products ── */
+    .products-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 28px;
+    }
+    .product-card {
+      background: var(--white); border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow); transition: transform 0.25s, box-shadow 0.25s; cursor: pointer;
+    }
+    .product-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-hover); }
+    .product-img-wrap { position: relative; padding-top: 100%; overflow: hidden; background: var(--cream); }
+    .product-img-wrap img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; transition: transform 0.4s;
+    }
+    .product-card:hover .product-img-wrap img { transform: scale(1.06); }
+    .product-badge {
+      position: absolute; top: 12px; left: 12px;
+      background: var(--pink); color: var(--brown); font-size: 11px;
+      font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px;
+    }
+    .product-info { padding: 20px 20px 24px; }
+    .product-name {
+      font-family: 'Noto Serif TC', serif; font-size: 17px;
+      font-weight: 600; color: var(--brown); margin-bottom: 6px;
+    }
+    .product-desc {
+      font-size: 13px; color: var(--brown-light); line-height: 1.7;
+      margin-bottom: 16px; min-height: 40px;
+    }
+    .product-footer { display: flex; align-items: center; justify-content: space-between; }
+    .product-price { font-size: 20px; font-weight: 700; color: var(--gold); }
+    .product-price span { font-size: 13px; font-weight: 400; color: var(--brown-light); margin-left: 2px; }
+    .btn-add-cart {
+      background: var(--gold); color: var(--white); border: none;
+      width: 36px; height: 36px; border-radius: 50%; font-size: 20px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.15s; font-weight: 300; line-height: 1;
+    }
+    .btn-add-cart:hover { background: var(--gold-dark); transform: scale(1.1); }
+    .products-empty {
+      grid-column: 1/-1; text-align: center; padding: 60px 24px;
+      color: var(--brown-light); font-size: 15px;
+    }
+    .products-empty a { color: var(--gold); text-decoration: none; font-weight: 600; }
+
+    /* ── Features strip ── */
+    .features-strip { background: var(--cream-dark); padding: 48px 24px; }
+    .features-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px; text-align: center;
+    }
+    .feature-icon { font-size: 32px; margin-bottom: 12px; }
+    .feature-title { font-family: 'Noto Serif TC', serif; font-size: 15px; font-weight: 600; color: var(--brown); margin-bottom: 6px; }
+    .feature-desc { font-size: 12px; color: var(--brown-light); line-height: 1.7; }
+
+    /* ── Brand story ── */
+    .brand-section { background: linear-gradient(135deg, #fde8ef 0%, #fdf3ec 100%); }
+    .brand-inner {
+      max-width: 1200px; margin: 0 auto; padding: 72px 24px;
+      display: flex; align-items: center; gap: 64px;
+    }
+    .brand-img { flex-shrink: 0; width: 300px; }
+    .brand-img img { width: 100%; object-fit: contain; filter: drop-shadow(0 12px 28px rgba(201,149,107,0.2)); }
+    .brand-text { flex: 1; }
+    .brand-text .section-tag { display: block; text-align: left; margin-bottom: 10px; }
+    .brand-text .section-title { text-align: left; font-size: 26px; margin-bottom: 16px; }
+    .brand-text p { font-size: 14px; color: var(--brown-mid); line-height: 2; margin-bottom: 12px; }
+
+    /* ── Footer ── */
+    footer { background: var(--brown); color: rgba(255,255,255,0.75); }
+    .footer-inner { max-width: 1200px; margin: 0 auto; padding: 48px 24px 24px; }
+    .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+    .footer-brand img { height: 36px; filter: brightness(0) invert(1); opacity: 0.9; }
+    .footer-brand p { font-size: 13px; line-height: 1.8; margin-bottom: 20px; }
+    .social-links { display: flex; gap: 12px; }
+    .social-links a {
+      width: 36px; height: 36px; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; font-size: 13px; color: rgba(255,255,255,0.7); transition: all 0.2s;
+    }
+    .social-links a:hover { background: var(--gold); border-color: var(--gold); color: white; }
+    .footer-col h4 { font-size: 13px; font-weight: 700; color: var(--white); letter-spacing: 1px; margin-bottom: 16px; text-transform: uppercase; }
+    .footer-col a { display: block; font-size: 13px; color: rgba(255,255,255,0.6); text-decoration: none; margin-bottom: 10px; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--gold-light); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; color: rgba(255,255,255,0.35); flex-wrap: wrap; gap: 8px;
+    }
+    .footer-admin-link {
+      background: none; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;
+      font-size: 11px; color: rgba(255,255,255,0.4); cursor: pointer;
+      font-family: inherit; padding: 5px 12px; transition: all 0.2s; letter-spacing: 0.5px;
+    }
+    .footer-admin-link:hover { color: var(--gold-light); border-color: rgba(201,149,107,0.4); }
+
+    /* ── Auth Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(61,43,31,0.45); backdrop-filter: blur(4px);
+      z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--white); border-radius: 24px; padding: 36px; width: 100%; max-width: 420px;
+      position: relative; transform: translateY(16px) scale(0.97); transition: transform 0.25s;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-overlay.active .modal { transform: none; }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; background: var(--cream-dark);
+      border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+      font-size: 16px; color: var(--brown-mid); display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+    }
+    .modal-close:hover { background: var(--cream); }
+    .auth-logo { text-align: center; margin-bottom: 24px; }
+    .auth-logo img { height: 40px; }
+    .auth-tabs { display: flex; background: var(--cream-dark); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+    .auth-tab {
+      flex: 1; padding: 10px; border: none; background: none; border-radius: 10px;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: var(--brown-mid); cursor: pointer; transition: all 0.2s;
+    }
+    .auth-tab.active { background: var(--white); color: var(--brown); font-weight: 700; box-shadow: 0 2px 8px rgba(61,43,31,0.08); }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--brown-mid); letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--cream-dark); border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 14px; color: var(--brown); background: var(--white); outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--gold); }
+    .form-group textarea { resize: vertical; min-height: 72px; }
+    .btn-submit {
+      width: 100%; background: var(--gold); color: var(--white); border: none;
+      padding: 14px; border-radius: 12px; font-family: inherit; font-size: 15px;
+      font-weight: 700; cursor: pointer; margin-top: 8px; transition: background 0.2s;
+    }
+    .btn-submit:hover { background: var(--gold-dark); }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+
+    /* ── Cart Drawer ── */
+    .cart-drawer {
+      position: fixed; top: 0; right: 0; width: 380px; height: 100vh;
+      background: var(--white); z-index: 200;
+      box-shadow: -8px 0 40px rgba(61,43,31,0.12);
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+    .cart-drawer-overlay {
+      position: fixed; inset: 0; background: rgba(61,43,31,0.35); z-index: 199;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .cart-drawer-overlay.active { opacity: 1; pointer-events: all; }
+    .cart-header {
+      padding: 24px 24px 20px; border-bottom: 1px solid var(--cream-dark);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .cart-header h3 { font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 600; }
+    .cart-items { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .cart-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--brown-light); gap: 12px; text-align: center; }
+    .cart-empty-icon { font-size: 48px; opacity: 0.4; }
+    .cart-empty p { font-size: 14px; }
+    .cart-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--cream-dark); }
+    .cart-item-img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: var(--cream); flex-shrink: 0; }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-name { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
+    .cart-item-price { font-size: 13px; color: var(--gold); font-weight: 700; margin-bottom: 8px; }
+    .cart-item-qty { display: flex; align-items: center; gap: 8px; }
+    .qty-btn {
+      background: var(--cream-dark); border: none; width: 26px; height: 26px; border-radius: 50%;
+      cursor: pointer; font-size: 14px; color: var(--brown); display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+    }
+    .qty-btn:hover { background: var(--gold-light); }
+    .qty-num { font-size: 14px; font-weight: 600; color: var(--brown); min-width: 20px; text-align: center; }
+    .cart-item-remove { background: none; border: none; cursor: pointer; color: var(--brown-light); font-size: 16px; padding: 4px; transition: color 0.2s; flex-shrink: 0; }
+    .cart-item-remove:hover { color: #e05555; }
+    .cart-footer { padding: 20px 24px; border-top: 1px solid var(--cream-dark); flex-shrink: 0; }
+    .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .cart-total span:first-child { font-size: 14px; color: var(--brown-mid); font-weight: 500; }
+    .cart-total-price { font-size: 22px; font-weight: 700; color: var(--gold); }
+    .btn-checkout {
+      width: 100%; background: var(--gold); color: var(--white); border: none;
+      padding: 16px; border-radius: 14px; font-family: inherit; font-size: 15px;
+      font-weight: 700; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-checkout:hover { background: var(--gold-dark); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--brown); color: var(--white);
+      padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 500;
+      z-index: 300; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { display: none; }
+      .hero-content { flex-direction: column; text-align: center; padding: 40px 24px; }
+      .hero-visual { width: 100%; }
+      .hero-visual img { width: 200px; height: 200px; }
+      .hero-cta { justify-content: center; }
+      .brand-inner { flex-direction: column; }
+      .brand-img { width: 200px; margin: 0 auto; }
+      .brand-text .section-tag, .brand-text .section-title { text-align: center; }
+      .brand-text p { text-align: center; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .cart-drawer { width: 100%; }
+      .products-grid { grid-template-columns: 1fr; }
+      .carousel-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header id="site-header">
+  <div class="header-inner">
+    <div class="logo"><img src="logo.png" alt="Bunny Bliss"></div>
+    <nav>
+      <a href="index.html">首頁</a>
+      <a href="products.html">商品</a>
+      <a href="#about">關於我們</a>
+      <a href="#">購物說明</a>
+      <a href="#">聯絡我們</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-text" onclick="openAuth('login')">會員登入</button>
+      <span class="btn-divider">/</span>
+      <button class="btn-text" onclick="openAuth('register')">註冊</button>
+      <button class="btn-cart" onclick="openCart()" aria-label="購物車">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6" stroke-linecap="round"/>
+          <path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
+        <span class="cart-badge" id="cart-badge">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Hero Carousel -->
+<section class="hero" id="hero-section">
+  <div class="hero-slides" id="hero-slides"></div>
+  <button class="carousel-arrow prev" id="carousel-prev" onclick="carouselMove(-1)">&#8592;</button>
+  <button class="carousel-arrow next" id="carousel-next" onclick="carouselMove(1)">&#8594;</button>
+  <div class="carousel-dots" id="carousel-dots"></div>
+</section>
+
+<!-- Features strip -->
+<div class="features-strip">
+  <div class="features-inner">
+    <div class="feature-item">
+      <div class="feature-icon">🧈</div>
+      <div class="feature-title">純天然食材</div>
+      <div class="feature-desc">無添加防腐劑，<br>選用優質奶油與麵粉</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">👐</div>
+      <div class="feature-title">職人手工製作</div>
+      <div class="feature-desc">每批限量生產，<br>保證新鮮現烤</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📦</div>
+      <div class="feature-title">精美禮盒包裝</div>
+      <div class="feature-desc">自用送禮兩相宜，<br>附提袋免費包裝</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🚚</div>
+      <div class="feature-title">全台低溫配送</div>
+      <div class="feature-desc">確保新鮮抵達，<br>滿 $800 免運費</div>
+    </div>
+  </div>
+</div>
+
+<!-- Products -->
+<section class="section" id="products">
+  <div class="section-header">
+    <span class="section-tag">Our Products</span>
+    <h2 class="section-title">人氣甜點選品</h2>
+    <p class="section-desc">每一款都是精心研發的招牌商品，酥脆口感搭配獨特風味，讓人一吃就上癮</p>
+  </div>
+  <div class="products-grid" id="products-grid"></div>
+</section>
+
+<!-- Brand Story -->
+<section class="brand-section" id="about">
+  <div class="brand-inner">
+    <div class="brand-img">
+      <img src="660806105_18076090250232815_3216155940521961883_n.jpg" alt="Bunny Bliss 品牌故事">
+    </div>
+    <div class="brand-text">
+      <span class="section-tag">About Us</span>
+      <h2 class="section-title">源自對甜點的純粹熱愛</h2>
+      <p>Bunny Bliss 創立於台灣，由一位對烘焙充滿熱情的甜點師傅親手打造。品牌名稱融合了可愛兔子的溫柔形象與「幸福」的概念，希望每位顧客品嚐時都能感受到如同小兔子般純真無憂的快樂。</p>
+      <p>我們堅持使用天然食材，不添加任何人工防腐劑。從法式酥皮工藝到台灣特色茶葉，每一款商品都凝聚了職人的心意與技術，只為讓您在忙碌生活中享有片刻的美好。</p>
+      <p>跟著 Bunny Bliss 一起，把每一個平凡日子都過得甜甜蜜蜜 🐰</p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div style="font-family:'Noto Serif TC',serif;font-size:20px;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:0.5px;margin-bottom:16px;">Bunny Bliss</div>
+        <p>手工職人甜點，每一口都是<br>對幸福最真誠的詮釋。</p>
+        <div class="social-links">
+          <a href="https://www.instagram.com/bunnybliss.22/" target="_blank" rel="noopener" title="Instagram">IG</a>
+          <a href="https://www.threads.com/@bunnybliss.22" target="_blank" rel="noopener" title="Threads">TH</a>
+          <a href="https://lin.ee/oOLtZ3Y" target="_blank" rel="noopener" title="官方 LINE">LINE</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>商品分類</h4>
+        <a href="#">捲捲棒系列</a>
+        <a href="#">千層酥系列</a>
+        <a href="#">季節限定</a>
+        <a href="#">禮盒組合</a>
+      </div>
+      <div class="footer-col">
+        <h4>客戶服務</h4>
+        <a href="#">購物說明</a>
+        <a href="#">配送資訊</a>
+        <a href="#">退換貨政策</a>
+        <a href="#">常見問題</a>
+        <a href="#">聯絡我們</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2024 Bunny Bliss. All rights reserved.</span>
+      <span>設計與製作 ♥ 台灣</span>
+      <a href="admin.html" class="footer-admin-link">⚙ 後台管理</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-overlay" onclick="closeOverlay('auth-overlay')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeOverlay('auth-overlay')">✕</button>
+    <div class="auth-logo"><div style="font-family:'Noto Serif TC',serif;font-size:22px;font-weight:600;color:var(--gold);letter-spacing:0.5px;">🐰 Bunny Bliss</div></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">會員登入</button>
+      <button class="auth-tab" id="tab-register" onclick="switchTab('register')">新會員註冊</button>
+    </div>
+    <div class="auth-panel active" id="panel-login">
+      <div class="form-group"><label>電子信箱</label><input type="email" placeholder="請輸入電子信箱"></div>
+      <div class="form-group"><label>密碼</label><input type="password" placeholder="請輸入密碼"></div>
+      <button class="btn-submit" onclick="fakeLogin()">登入</button>
+    </div>
+    <div class="auth-panel" id="panel-register">
+      <div class="form-group"><label>姓名</label><input type="text" placeholder="請輸入真實姓名"></div>
+      <div class="form-group"><label>電子信箱</label><input type="email" placeholder="請輸入電子信箱"></div>
+      <div class="form-group"><label>密碼</label><input type="password" placeholder="至少 8 個字元"></div>
+      <div class="form-group"><label>確認密碼</label><input type="password" placeholder="再次輸入密碼"></div>
+      <button class="btn-submit" onclick="fakeRegister()">立即註冊</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cart Drawer -->
+<div class="cart-drawer-overlay" id="cart-overlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-header">
+    <h3>購物車</h3>
+    <button class="modal-close" style="position:static" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cart-items-list"></div>
+  <div class="cart-footer" id="cart-footer" style="display:none">
+    <div class="cart-total">
+      <span>小計</span>
+      <span class="cart-total-price" id="cart-total-price">NT$0</span>
+    </div>
+    <button class="btn-checkout">前往結帳 →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Default data ──
+const DEFAULT_BANNERS = [
+  {
+    id: 1, active: true,
+    tag: '手工現烤 ✦ 職人甜點',
+    title: '每一口，\n都是幸福滋味',
+    desc: 'Bunny Bliss 精選職人配方，以最純粹的食材手工製作，\n酥脆捲捲棒、層次豐富千層酥，\n讓每個瞬間都充滿甜蜜。',
+    illustration: '658556235_18076090241232815_7694748661845347653_n.jpg',
+    bgImage: '', cta1: '立即選購', cta2: '品牌故事',
+    gradient: 'linear-gradient(135deg, #fde8d8 0%, #fdf3ec 50%, #fde8ef 100%)'
+  },
+  {
+    id: 2, active: true,
+    tag: '季節限定 ✦ 紅茶烏龍',
+    title: '台灣茶葉，\n千層香氣',
+    desc: '精選台灣烏龍茶與阿薩姆紅茶，\n撒上杏仁片烘焙，每一層都是驚喜。',
+    illustration: '紅茶烏龍千層.jpg',
+    bgImage: '', cta1: '立即選購', cta2: '',
+    gradient: 'linear-gradient(135deg, #e8f5e9 0%, #fdf8f3 50%, #e8f0fe 100%)'
+  },
+  {
+    id: 3, active: true,
+    tag: '人氣首選 ✦ 巧克力',
+    title: '比利時可可，\n濃郁苦甜',
+    desc: '採用比利時頂級可可粉融入酥皮，\n深邃苦甜香氣，層次豐富令人回味。',
+    illustration: '巧克力捲捲棒.jpg',
+    bgImage: '', cta1: '立即選購', cta2: '',
+    gradient: 'linear-gradient(135deg, #fde8d8 0%, #f9f0e8 50%, #f5e6d0 100%)'
+  }
+];
+
+const DEFAULT_PRODUCTS = [
+  { id: 1, active: true, name: '捲捲棒（原味）', price: 280, desc: '以法式酥皮工藝手工製作，層層酥脆、入口即化，撒上細砂糖烤出焦糖香氣', image: '捲捲棒.jpg', badge: '🔥 人氣首選', badgeColor: '#f2b8c6', order: 0 },
+  { id: 2, active: true, name: '巧克力捲捲棒', price: 300, desc: '採用比利時可可粉融入酥皮，深邃苦甜巧克力香氣，層次豐富令人回味無窮', image: '巧克力捲捲棒.jpg', badge: '✨ 新品上市', badgeColor: '#d4a8c7', order: 1 },
+  { id: 3, active: true, name: '紅茶烏龍千層酥', price: 320, desc: '精選台灣烏龍茶融合阿薩姆紅茶，撒上杏仁片烘焙，千層酥皮帶來絕佳口感', image: '紅茶烏龍千層.jpg', badge: '🍵 季節限定', badgeColor: '#c4d4a8', order: 2 }
+];
+
+function getBanners() {
+  const raw = localStorage.getItem('bb_banners');
+  return raw ? JSON.parse(raw) : DEFAULT_BANNERS;
+}
+function getProducts() {
+  const raw = localStorage.getItem('bb_products');
+  return raw ? JSON.parse(raw) : DEFAULT_PRODUCTS;
+}
+
+// ── Carousel ──
+let currentSlide = 0;
+let carouselTimer = null;
+let banners = [];
+
+function renderCarousel() {
+  banners = getBanners().filter(b => b.active);
+  const slidesEl = document.getElementById('hero-slides');
+  const dotsEl = document.getElementById('carousel-dots');
+  const prevBtn = document.getElementById('carousel-prev');
+  const nextBtn = document.getElementById('carousel-next');
+
+  if (!banners.length) {
+    slidesEl.innerHTML = '<div style="min-height:300px;display:flex;align-items:center;justify-content:center;color:var(--brown-light);font-size:15px;">尚未設定橫幅，請前往後台新增</div>';
+    dotsEl.innerHTML = '';
+    prevBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+    return;
+  }
+
+  prevBtn.style.display = banners.length > 1 ? '' : 'none';
+  nextBtn.style.display = banners.length > 1 ? '' : 'none';
+
+  slidesEl.innerHTML = banners.map((b, i) => `
+    <div class="hero-slide${i === 0 ? ' active' : ''}" id="slide-${i}" style="background:${b.gradient || 'linear-gradient(135deg,#fde8d8,#fdf3ec,#fde8ef)'}">
+      ${b.bgImage ? `<img class="hero-slide-bg" src="${escHtml(b.bgImage)}" alt="" onerror="this.style.display='none'">` : ''}
+      <div class="hero-content">
+        <div class="hero-text">
+          <span class="hero-tag">${escHtml(b.tag)}</span>
+          <h1 class="hero-title">${escHtml(b.title).replace(/\n/g, '<br>')}</h1>
+          <p class="hero-desc">${escHtml(b.desc).replace(/\n/g, '<br>')}</p>
+          <div class="hero-cta">
+            ${b.cta1 ? `<button class="btn-primary" onclick="document.getElementById('products').scrollIntoView({behavior:'smooth'})">${escHtml(b.cta1)}</button>` : ''}
+            ${b.cta2 ? `<button class="btn-outline" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">${escHtml(b.cta2)}</button>` : ''}
+          </div>
+        </div>
+        ${b.illustration ? `<div class="hero-visual"><img src="${escHtml(b.illustration)}" alt="" onerror="this.style.display='none'"></div>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  dotsEl.innerHTML = banners.map((_, i) =>
+    `<button class="carousel-dot${i === 0 ? ' active' : ''}" onclick="goToSlide(${i})"></button>`
+  ).join('');
+
+  currentSlide = 0;
+  startCarouselTimer();
+}
+
+function goToSlide(n) {
+  const slides = document.querySelectorAll('.hero-slide');
+  const dots = document.querySelectorAll('.carousel-dot');
+  if (!slides.length) return;
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  currentSlide = (n + banners.length) % banners.length;
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+}
+
+function carouselMove(dir) {
+  goToSlide(currentSlide + dir);
+  resetCarouselTimer();
+}
+
+function startCarouselTimer() {
+  clearInterval(carouselTimer);
+  if (banners.length > 1) {
+    carouselTimer = setInterval(() => goToSlide(currentSlide + 1), 5000);
+  }
+}
+
+function resetCarouselTimer() {
+  clearInterval(carouselTimer);
+  startCarouselTimer();
+}
+
+document.getElementById('hero-section').addEventListener('mouseenter', () => clearInterval(carouselTimer));
+document.getElementById('hero-section').addEventListener('mouseleave', startCarouselTimer);
+
+// ── Products ──
+function renderProducts() {
+  const products = getProducts().filter(p => p.active).sort((a, b) => a.order - b.order);
+  const grid = document.getElementById('products-grid');
+  if (!products.length) {
+    grid.innerHTML = `<div class="products-empty">尚未上架任何商品，<a href="admin.html">前往後台新增</a></div>`;
+    return;
+  }
+  grid.innerHTML = products.map(p => `
+    <a class="product-card" href="product-detail.html?id=${p.id}" style="text-decoration:none;color:inherit;display:block">
+      <div class="product-img-wrap">
+        <img src="${escHtml(p.image)}" alt="${escHtml(p.name)}" onerror="this.style.display='none'">
+        ${p.badge ? `<span class="product-badge" style="background:${escHtml(p.badgeColor || '#f2b8c6')};color:#3d2b1f">${escHtml(p.badge)}</span>` : ''}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${escHtml(p.name)}</div>
+        <div class="product-desc">${escHtml(p.desc)}</div>
+        <div class="product-footer">
+          <div class="product-price">NT$${p.price} <span>/ 盒</span></div>
+          <button class="btn-add-cart" onclick="event.preventDefault();event.stopPropagation();addToCart(${escAttr(JSON.stringify({name:p.name,price:p.price,image:p.image}))})">+</button>
+        </div>
+      </div>
+    </a>
+  `).join('');
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return "'" + String(s || '').replace(/'/g, "\\'") + "'";
+}
+
+// ── Cart ──
+let cart = JSON.parse(localStorage.getItem('bb_cart') || '[]');
+function saveCart() { localStorage.setItem('bb_cart', JSON.stringify(cart)); }
+function updateCartBadge() {
+  const badge = document.getElementById('cart-badge');
+  const total = cart.reduce((s, i) => s + i.qty, 0);
+  badge.textContent = total;
+  badge.classList.toggle('visible', total > 0);
+}
+function renderCart() {
+  const list = document.getElementById('cart-items-list');
+  const footer = document.getElementById('cart-footer');
+  if (!cart.length) {
+    list.innerHTML = `<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>購物車是空的<br>去挑選您喜愛的甜點吧！</p></div>`;
+    footer.style.display = 'none';
+    return;
+  }
+  footer.style.display = 'block';
+  list.innerHTML = cart.map((item, i) => `
+    <div class="cart-item">
+      <img class="cart-item-img" src="${escHtml(item.image)}" alt="${escHtml(item.name)}">
+      <div class="cart-item-info">
+        <div class="cart-item-name">${escHtml(item.name)}</div>
+        <div class="cart-item-price">NT$${item.price}</div>
+        <div class="cart-item-qty">
+          <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${i},1)">+</button>
+        </div>
+      </div>
+      <button class="cart-item-remove" onclick="removeItem(${i})">🗑</button>
+    </div>`).join('');
+  document.getElementById('cart-total-price').textContent = `NT$${cart.reduce((s,i)=>s+i.price*i.qty,0)}`;
+}
+function addToCart(data) {
+  if (typeof data === 'string') data = JSON.parse(data);
+  const ex = cart.find(i => i.name === data.name);
+  ex ? ex.qty++ : cart.push({...data, qty: 1});
+  saveCart(); updateCartBadge();
+  showToast(`已加入購物車：${data.name}`);
+}
+function changeQty(i, d) {
+  cart[i].qty += d;
+  if (cart[i].qty <= 0) cart.splice(i, 1);
+  saveCart(); updateCartBadge(); renderCart();
+}
+function removeItem(i) { cart.splice(i, 1); saveCart(); updateCartBadge(); renderCart(); }
+function openCart() { renderCart(); document.getElementById('cart-drawer').classList.add('open'); document.getElementById('cart-overlay').classList.add('active'); document.body.style.overflow = 'hidden'; }
+function closeCart() { document.getElementById('cart-drawer').classList.remove('open'); document.getElementById('cart-overlay').classList.remove('active'); document.body.style.overflow = ''; }
+
+// ── Auth ──
+function openAuth(tab) { switchTab(tab); document.getElementById('auth-overlay').classList.add('active'); document.body.style.overflow = 'hidden'; }
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+  document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+}
+function fakeLogin() { closeOverlay('auth-overlay'); showToast('登入成功！歡迎回來 🐰'); }
+function fakeRegister() { closeOverlay('auth-overlay'); showToast('註冊成功！歡迎加入 Bunny Bliss 🎉'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = ''; }
+
+// ── Scroll header ──
+window.addEventListener('scroll', () => document.getElementById('site-header').classList.toggle('scrolled', scrollY > 10));
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Init ──
+renderCarousel();
+renderProducts();
+updateCartBadge();
+</script>
+</body>
+</html>

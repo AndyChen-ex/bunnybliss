@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品詳情 | Bunny Bliss</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #fdf8f3; --cream-dark: #f5ece1;
+      --gold: #c9956b; --gold-dark: #a97848; --gold-light: #e8c4a0;
+      --pink: #f2b8c6; --pink-light: #fde8ef;
+      --brown: #3d2b1f; --brown-mid: #7a5c4f; --brown-light: #b08878;
+      --white: #ffffff;
+      --shadow: 0 4px 20px rgba(61,43,31,0.08);
+      --shadow-hover: 0 8px 32px rgba(61,43,31,0.14);
+      --radius: 16px; --radius-sm: 8px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: var(--cream); color: var(--brown); }
+
+    /* Header */
+    header { position: sticky; top: 0; z-index: 100; background: rgba(253,248,243,0.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--cream-dark); transition: box-shadow 0.3s; }
+    header.scrolled { box-shadow: var(--shadow); }
+    .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 84px; display: flex; align-items: center; gap: 32px; }
+    .logo { flex-shrink: 0; text-decoration: none; }
+    .logo img { height: 62px; width: auto; }
+    nav { display: flex; gap: 28px; flex: 1; }
+    nav a { text-decoration: none; color: var(--brown-mid); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    nav a:hover, nav a.active { color: var(--gold); }
+    .header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .btn-text { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 13px; color: var(--brown-mid); font-weight: 500; padding: 6px 4px; transition: color 0.2s; }
+    .btn-text:hover { color: var(--gold); }
+    .btn-divider { color: var(--gold-light); font-size: 13px; }
+    .btn-cart { background: none; border: 2px solid var(--gold); cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; transition: background 0.2s; }
+    .btn-cart:hover { background: var(--gold); }
+    .btn-cart:hover svg path, .btn-cart:hover svg line { stroke: var(--white); }
+    .btn-cart svg { width: 18px; height: 18px; }
+    .btn-cart svg path, .btn-cart svg line { stroke: var(--gold); stroke-width: 1.8; fill: none; transition: stroke 0.2s; }
+    .cart-badge { position: absolute; top: -4px; right: -4px; background: var(--pink); color: var(--brown); font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; }
+    .cart-badge.visible { display: flex; }
+
+    /* Breadcrumb */
+    .breadcrumb { max-width: 1200px; margin: 0 auto; padding: 16px 24px 0; font-size: 13px; color: var(--brown-light); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--brown-light); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--gold); }
+    .breadcrumb span { color: var(--gold); }
+
+    /* Main layout */
+    .detail-layout { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; display: flex; gap: 56px; align-items: flex-start; }
+
+    /* Image side */
+    .detail-image-col { flex: 1; max-width: 520px; }
+    .main-image {
+      width: 100%; padding-top: 100%; position: relative;
+      border-radius: 24px; overflow: hidden;
+      background: var(--cream-dark);
+      box-shadow: var(--shadow);
+    }
+    .main-image img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; transition: transform 0.4s;
+    }
+    .main-image:hover img { transform: scale(1.04); }
+    .image-badge {
+      position: absolute; top: 16px; left: 16px;
+      font-size: 12px; font-weight: 700; padding: 5px 12px;
+      border-radius: 20px; z-index: 1;
+    }
+
+    /* Info side */
+    .detail-info-col { flex: 1; min-width: 0; padding-top: 8px; position: sticky; top: 104px; }
+    .detail-cat-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      margin-bottom: 16px; cursor: pointer; text-decoration: none;
+    }
+    .detail-name {
+      font-family: 'Noto Serif TC', serif; font-size: 32px; font-weight: 600;
+      line-height: 1.3; margin-bottom: 12px; color: var(--brown);
+    }
+    .detail-price {
+      font-size: 36px; font-weight: 700; color: var(--gold); margin-bottom: 8px;
+    }
+    .detail-price small { font-size: 16px; font-weight: 400; color: var(--brown-light); }
+    .detail-unit { font-size: 13px; color: var(--brown-light); margin-bottom: 28px; }
+
+    .detail-divider { height: 1px; background: var(--cream-dark); margin: 24px 0; }
+
+    .detail-desc { font-size: 15px; color: var(--brown-mid); line-height: 2; margin-bottom: 28px; }
+
+    /* Quantity */
+    .qty-label { font-size: 13px; font-weight: 700; color: var(--brown-mid); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px; }
+    .qty-row { display: flex; align-items: center; gap: 0; margin-bottom: 20px; width: fit-content; }
+    .qty-btn {
+      background: var(--cream-dark); border: none; width: 40px; height: 40px;
+      cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; color: var(--brown);
+    }
+    .qty-btn:first-child { border-radius: 10px 0 0 10px; }
+    .qty-btn:last-child { border-radius: 0 10px 10px 0; }
+    .qty-btn:hover { background: var(--gold-light); }
+    .qty-num {
+      width: 52px; height: 40px; border: none; background: var(--cream-dark);
+      text-align: center; font-family: inherit; font-size: 16px; font-weight: 700;
+      color: var(--brown); outline: none; border-left: 1px solid var(--cream); border-right: 1px solid var(--cream);
+    }
+
+    /* CTA buttons */
+    .cta-row { display: flex; gap: 12px; margin-bottom: 24px; }
+    .btn-add-cart-big {
+      flex: 1; background: var(--gold); color: var(--white); border: none;
+      padding: 16px; border-radius: 14px; font-family: inherit; font-size: 16px;
+      font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-add-cart-big:hover { background: var(--gold-dark); transform: translateY(-1px); }
+    .btn-wishlist {
+      width: 52px; height: 52px; border: 2px solid var(--gold); background: none;
+      border-radius: 14px; cursor: pointer; font-size: 20px; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-wishlist:hover { background: var(--pink-light); border-color: var(--pink); }
+
+    /* Info list */
+    .detail-info-list { display: flex; flex-direction: column; gap: 10px; }
+    .detail-info-item { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; }
+    .detail-info-item .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .detail-info-item .text { color: var(--brown-mid); line-height: 1.6; }
+    .detail-info-item .text strong { color: var(--brown); font-weight: 600; }
+
+    /* Related products */
+    .related-section { max-width: 1200px; margin: 0 auto; padding: 0 24px 72px; }
+    .related-section h3 { font-family: 'Noto Serif TC', serif; font-size: 22px; font-weight: 600; margin-bottom: 24px; }
+    .related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+    .related-card {
+      background: var(--white); border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none; color: inherit; display: block;
+    }
+    .related-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+    .related-img { width: 100%; padding-top: 100%; position: relative; background: var(--cream); overflow: hidden; }
+    .related-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .related-card:hover .related-img img { transform: scale(1.06); }
+    .related-info { padding: 12px 14px 16px; }
+    .related-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .related-price { font-size: 15px; font-weight: 700; color: var(--gold); }
+
+    /* Not found */
+    .not-found { text-align: center; padding: 80px 24px; }
+    .not-found .icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
+    .not-found h2 { font-family: 'Noto Serif TC', serif; font-size: 22px; margin-bottom: 12px; }
+    .not-found p { color: var(--brown-light); margin-bottom: 24px; }
+    .btn-back { display: inline-flex; align-items: center; gap: 8px; background: var(--gold); color: var(--white); text-decoration: none; padding: 12px 28px; border-radius: 50px; font-weight: 700; font-size: 14px; transition: background 0.2s; }
+    .btn-back:hover { background: var(--gold-dark); }
+
+    /* Cart Drawer */
+    .cart-drawer { position: fixed; top: 0; right: 0; width: 380px; height: 100vh; background: var(--white); z-index: 200; box-shadow: -8px 0 40px rgba(61,43,31,0.12); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .cart-drawer.open { transform: translateX(0); }
+    .cart-drawer-overlay { position: fixed; inset: 0; background: rgba(61,43,31,0.35); z-index: 199; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .cart-drawer-overlay.active { opacity: 1; pointer-events: all; }
+    .cart-header { padding: 24px 24px 20px; border-bottom: 1px solid var(--cream-dark); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .cart-header h3 { font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 600; }
+    .modal-close { background: var(--cream-dark); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; color: var(--brown-mid); display: flex; align-items: center; justify-content: center; }
+    .cart-items { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .cart-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--brown-light); gap: 12px; text-align: center; }
+    .cart-empty-icon { font-size: 48px; opacity: 0.4; }
+    .cart-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--cream-dark); }
+    .cart-item-img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: var(--cream); flex-shrink: 0; }
+    .cart-item-info { flex: 1; }
+    .cart-item-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .cart-item-price { font-size: 13px; color: var(--gold); font-weight: 700; margin-bottom: 8px; }
+    .cart-item-qty { display: flex; align-items: center; gap: 8px; }
+    .c-qty-btn { background: var(--cream-dark); border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .c-qty-btn:hover { background: var(--gold-light); }
+    .qty-num-s { font-size: 14px; font-weight: 600; min-width: 20px; text-align: center; }
+    .cart-item-remove { background: none; border: none; cursor: pointer; color: var(--brown-light); font-size: 16px; padding: 4px; }
+    .cart-item-remove:hover { color: #e05555; }
+    .cart-footer { padding: 20px 24px; border-top: 1px solid var(--cream-dark); flex-shrink: 0; }
+    .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .cart-total span:first-child { font-size: 14px; color: var(--brown-mid); }
+    .cart-total-price { font-size: 22px; font-weight: 700; color: var(--gold); }
+    .btn-checkout { width: 100%; background: var(--gold); color: var(--white); border: none; padding: 16px; border-radius: 14px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .btn-checkout:hover { background: var(--gold-dark); }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--brown); color: var(--white); padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 500; z-index: 300; transition: transform 0.3s; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 768px) {
+      nav { display: none; }
+      .detail-layout { flex-direction: column; gap: 28px; padding: 20px 16px 60px; }
+      .detail-image-col { max-width: 100%; }
+      .detail-info-col { position: static; }
+      .cart-drawer { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header id="site-header">
+  <div class="header-inner">
+    <a class="logo" href="index.html"><img src="logo.png" alt="Bunny Bliss"></a>
+    <nav>
+      <a href="index.html">首頁</a>
+      <a href="products.html" class="active">商品</a>
+      <a href="index.html#about">關於我們</a>
+      <a href="#">購物說明</a>
+      <a href="#">聯絡我們</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-text" onclick="openAuth()">會員登入</button>
+      <span class="btn-divider">/</span>
+      <button class="btn-text" onclick="openAuth()">註冊</button>
+      <button class="btn-cart" onclick="openCart()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6" stroke-linecap="round"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="cart-badge" id="cart-badge">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div id="page-content"></div>
+
+<!-- Cart Drawer -->
+<div class="cart-drawer-overlay" id="cart-overlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cart-drawer">
+  <div class="cart-header"><h3>購物車</h3><button class="modal-close" onclick="closeCart()">✕</button></div>
+  <div class="cart-items" id="cart-items-list"></div>
+  <div class="cart-footer" id="cart-footer" style="display:none">
+    <div class="cart-total"><span>小計</span><span class="cart-total-price" id="cart-total-price">NT$0</span></div>
+    <button class="btn-checkout">前往結帳 →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_CATEGORIES = [
+  {id:1,name:'捲捲棒系列',color:'#f2b8c6',order:0},
+  {id:2,name:'千層酥系列',color:'#c4d4a8',order:1},
+  {id:3,name:'季節限定',color:'#d4a8c7',order:2},
+  {id:4,name:'禮盒組合',color:'#a8c4d4',order:3},
+];
+const DEFAULT_PRODUCTS = [
+  {id:1,active:true,name:'捲捲棒（原味）',price:280,desc:'以法式酥皮工藝手工製作，層層酥脆、入口即化，撒上細砂糖烤出焦糖香氣。每一根都是職人用心的結晶，讓您感受最純粹的酥脆滋味。',image:'捲捲棒.jpg',badge:'🔥 人氣首選',badgeColor:'#f2b8c6',order:0,categoryId:1},
+  {id:2,active:true,name:'巧克力捲捲棒',price:300,desc:'採用比利時頂級可可粉融入法式酥皮，深邃苦甜巧克力香氣與層層酥脆口感相互輝映，每一口都令人回味無窮。',image:'巧克力捲捲棒.jpg',badge:'✨ 新品上市',badgeColor:'#d4a8c7',order:1,categoryId:1},
+  {id:3,active:true,name:'紅茶烏龍千層酥',price:320,desc:'精選台灣烏龍茶融合阿薩姆紅茶，撒上烘焙杏仁片，千層酥皮層層分明，茶香悠長，每一塊都是下午茶的最佳伴侶。',image:'紅茶烏龍千層.jpg',badge:'🍵 季節限定',badgeColor:'#c4d4a8',order:2,categoryId:2},
+];
+
+function getCategories(){const r=localStorage.getItem('bb_categories');return r?JSON.parse(r):DEFAULT_CATEGORIES;}
+function getProducts(){const r=localStorage.getItem('bb_products');return r?JSON.parse(r):DEFAULT_PRODUCTS;}
+
+const params = new URLSearchParams(location.search);
+const productId = params.get('id') ? parseInt(params.get('id')) : null;
+
+function render() {
+  const product = getProducts().find(p => p.id === productId && p.active);
+  const cats = getCategories();
+
+  if (!product) {
+    document.getElementById('page-content').innerHTML = `
+      <div class="not-found">
+        <div class="icon">🔍</div>
+        <h2>找不到此商品</h2>
+        <p>商品可能已下架或網址有誤</p>
+        <a class="btn-back" href="products.html">← 回到商品列表</a>
+      </div>`;
+    document.title = '找不到商品 | Bunny Bliss';
+    return;
+  }
+
+  const cat = cats.find(c => c.id === product.categoryId);
+  document.title = `${product.name} | Bunny Bliss`;
+
+  // Related: same category, exclude self
+  const related = getProducts()
+    .filter(p => p.active && p.id !== product.id && (cat ? p.categoryId === cat.id : true))
+    .slice(0, 4);
+
+  document.getElementById('page-content').innerHTML = `
+    <div class="breadcrumb">
+      <a href="index.html">首頁</a> ›
+      <a href="products.html">商品</a> ›
+      ${cat ? `<a href="products.html?cat=${cat.id}">${esc(cat.name)}</a> › ` : ''}
+      <span>${esc(product.name)}</span>
+    </div>
+
+    <div class="detail-layout">
+      <div class="detail-image-col">
+        <div class="main-image">
+          <img src="${esc(product.image)}" alt="${esc(product.name)}" onerror="this.style.display='none'">
+          ${product.badge ? `<span class="image-badge" style="background:${esc(product.badgeColor||'#f2b8c6')};color:#3d2b1f">${esc(product.badge)}</span>` : ''}
+        </div>
+      </div>
+
+      <div class="detail-info-col">
+        ${cat ? `<a class="detail-cat-tag" href="products.html?cat=${cat.id}" style="background:${cat.color}20;color:${cat.color};border:1.5px solid ${cat.color}40">${esc(cat.name)}</a>` : ''}
+        <h1 class="detail-name">${esc(product.name)}</h1>
+        <div class="detail-price">NT$${product.price} <small>/ 盒</small></div>
+
+        <div class="detail-divider"></div>
+
+        <p class="detail-desc">${esc(product.desc)}</p>
+
+        <div class="qty-label">數量</div>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="changeDetailQty(-1)">−</button>
+          <input class="qty-num" type="number" id="detail-qty" value="1" min="1" max="99">
+          <button class="qty-btn" onclick="changeDetailQty(1)">+</button>
+        </div>
+
+        <div class="cta-row">
+          <button class="btn-add-cart-big" onclick="addDetailToCart()">
+            🛒 加入購物車
+          </button>
+          <button class="btn-wishlist" title="收藏">🤍</button>
+        </div>
+
+        <div class="detail-info-list">
+          <div class="detail-info-item">
+            <span class="icon">🧈</span>
+            <span class="text"><strong>純天然食材</strong>，無添加防腐劑</span>
+          </div>
+          <div class="detail-info-item">
+            <span class="icon">👐</span>
+            <span class="text"><strong>職人手工製作</strong>，每批限量生產，保證新鮮</span>
+          </div>
+          <div class="detail-info-item">
+            <span class="icon">📦</span>
+            <span class="text"><strong>精美盒裝</strong>，自用送禮兩相宜</span>
+          </div>
+          <div class="detail-info-item">
+            <span class="icon">🚚</span>
+            <span class="text"><strong>滿 NT$800 免運費</strong>，全台低溫配送</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${related.length ? `
+    <div class="related-section">
+      <h3>同系列商品</h3>
+      <div class="related-grid">
+        ${related.map(r => `
+          <a class="related-card" href="product-detail.html?id=${r.id}">
+            <div class="related-img">
+              <img src="${esc(r.image)}" alt="${esc(r.name)}" onerror="this.style.display='none'">
+            </div>
+            <div class="related-info">
+              <div class="related-name">${esc(r.name)}</div>
+              <div class="related-price">NT$${r.price}</div>
+            </div>
+          </a>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+}
+
+function changeDetailQty(d) {
+  const input = document.getElementById('detail-qty');
+  if (!input) return;
+  input.value = Math.max(1, Math.min(99, parseInt(input.value || 1) + d));
+}
+
+function addDetailToCart() {
+  const product = getProducts().find(p => p.id === productId && p.active);
+  if (!product) return;
+  const qty = parseInt(document.getElementById('detail-qty').value) || 1;
+  for (let i = 0; i < qty; i++) {
+    const ex = cart.find(item => item.name === product.name);
+    ex ? ex.qty++ : cart.push({ name: product.name, price: product.price, image: product.image, qty: 1 });
+  }
+  saveCart(); updateCartBadge();
+  showToast(`已加入購物車：${product.name} × ${qty}`);
+  openCart();
+}
+
+// Cart
+let cart = JSON.parse(localStorage.getItem('bb_cart')||'[]');
+function saveCart(){localStorage.setItem('bb_cart',JSON.stringify(cart));}
+function updateCartBadge(){const b=document.getElementById('cart-badge');const t=cart.reduce((s,i)=>s+i.qty,0);b.textContent=t;b.classList.toggle('visible',t>0);}
+function renderCart(){
+  const list=document.getElementById('cart-items-list');const footer=document.getElementById('cart-footer');
+  if(!cart.length){list.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><p>購物車是空的</p></div>';footer.style.display='none';return;}
+  footer.style.display='block';
+  list.innerHTML=cart.map((item,i)=>`<div class="cart-item"><img class="cart-item-img" src="${esc(item.image)}" alt=""><div class="cart-item-info"><div class="cart-item-name">${esc(item.name)}</div><div class="cart-item-price">NT$${item.price}</div><div class="cart-item-qty"><button class="c-qty-btn" onclick="changeQty(${i},-1)">−</button><span class="qty-num-s">${item.qty}</span><button class="c-qty-btn" onclick="changeQty(${i},1)">+</button></div></div><button class="cart-item-remove" onclick="removeItem(${i})">🗑</button></div>`).join('');
+  document.getElementById('cart-total-price').textContent=`NT$${cart.reduce((s,i)=>s+i.price*i.qty,0)}`;
+}
+function changeQty(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);saveCart();updateCartBadge();renderCart();}
+function removeItem(i){cart.splice(i,1);saveCart();updateCartBadge();renderCart();}
+function openCart(){renderCart();document.getElementById('cart-drawer').classList.add('open');document.getElementById('cart-overlay').classList.add('active');document.body.style.overflow='hidden';}
+function closeCart(){document.getElementById('cart-drawer').classList.remove('open');document.getElementById('cart-overlay').classList.remove('active');document.body.style.overflow='';}
+function openAuth(){showToast('請先登入 🐰');}
+
+window.addEventListener('scroll',()=>document.getElementById('site-header').classList.toggle('scrolled',scrollY>10));
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
+
+render();
+updateCartBadge();
+</script>
+</body>
+</html>
