@@ -378,8 +378,73 @@
     .toast.show { transform: translateX(-50%) translateY(0); }
 
     /* ── Responsive ── */
+    /* ── Mobile Nav Drawer ── */
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: 6px; flex-direction: column; gap: 5px; flex-shrink: 0;
+    }
+    .hamburger span {
+      display: block; width: 22px; height: 2px; background: var(--brown-mid);
+      border-radius: 2px; transition: all 0.3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .mobile-nav-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(61,43,31,0.4);
+      z-index: 150; opacity: 0; transition: opacity 0.3s;
+    }
+    .mobile-nav-overlay.active { opacity: 1; }
+
+    .mobile-nav-drawer {
+      position: fixed; top: 0; left: 0; height: 100vh; width: 280px;
+      background: var(--white); z-index: 160;
+      transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      display: flex; flex-direction: column; box-shadow: 4px 0 24px rgba(61,43,31,0.12);
+    }
+    .mobile-nav-drawer.open { transform: translateX(0); }
+
+    .mobile-nav-header {
+      padding: 20px 20px 16px; border-bottom: 1px solid var(--cream-dark);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .mobile-nav-header .brand {
+      font-family: 'Noto Serif TC', serif; font-size: 18px; font-weight: 600; color: var(--gold);
+    }
+    .mobile-nav-close {
+      background: var(--cream-dark); border: none; width: 32px; height: 32px;
+      border-radius: 50%; cursor: pointer; font-size: 16px; color: var(--brown-mid);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .mobile-nav-links { flex: 1; padding: 12px 0; overflow-y: auto; }
+    .mobile-nav-links a {
+      display: flex; align-items: center; gap: 12px; padding: 14px 24px;
+      text-decoration: none; font-size: 15px; font-weight: 500; color: var(--brown-mid);
+      transition: all 0.15s; border-left: 3px solid transparent;
+    }
+    .mobile-nav-links a:hover, .mobile-nav-links a.active {
+      color: var(--gold); background: var(--pink-light); border-left-color: var(--gold);
+    }
+    .mobile-nav-links .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+
+    .mobile-nav-footer {
+      padding: 16px 20px; border-top: 1px solid var(--cream-dark);
+      display: flex; gap: 10px;
+    }
+    .mobile-nav-footer button {
+      flex: 1; padding: 10px; border-radius: 10px; font-family: inherit;
+      font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s;
+    }
+    .btn-m-login { background: var(--cream-dark); color: var(--brown-mid); }
+    .btn-m-login:hover { background: var(--gold-light); }
+    .btn-m-register { background: var(--gold); color: var(--white); }
+    .btn-m-register:hover { background: var(--gold-dark); }
+
     @media (max-width: 768px) {
       nav { display: none; }
+      .hamburger { display: flex; }
       .header-inner { height: 64px; padding: 0 16px; gap: 12px; }
       .logo img { height: 44px; }
       .btn-text, .btn-divider { display: none; }
@@ -404,8 +469,31 @@
 <body>
 
 <!-- Header -->
+<!-- Mobile Nav Drawer -->
+<div class="mobile-nav-overlay" id="mob-overlay" onclick="closeMobileNav()"></div>
+<div class="mobile-nav-drawer" id="mob-drawer">
+  <div class="mobile-nav-header">
+    <span class="brand">🐰 Bunny Bliss</span>
+    <button class="mobile-nav-close" onclick="closeMobileNav()">✕</button>
+  </div>
+  <div class="mobile-nav-links">
+    <a href="index.html" class="active"><span class="nav-icon">🏠</span>首頁</a>
+    <a href="products.html"><span class="nav-icon">🍪</span>商品</a>
+    <a href="#about"><span class="nav-icon">🐰</span>關於我們</a>
+    <a href="#"><span class="nav-icon">📦</span>購物說明</a>
+    <a href="#"><span class="nav-icon">✉️</span>聯絡我們</a>
+  </div>
+  <div class="mobile-nav-footer">
+    <button class="btn-m-login" onclick="closeMobileNav();openAuth('login')">會員登入</button>
+    <button class="btn-m-register" onclick="closeMobileNav();openAuth('register')">立即註冊</button>
+  </div>
+</div>
+
 <header id="site-header">
   <div class="header-inner">
+    <button class="hamburger" id="hamburger" onclick="toggleMobileNav()">
+      <span></span><span></span><span></span>
+    </button>
     <div class="logo"><img src="logo.png" alt="Bunny Bliss"></div>
     <nav>
       <a href="index.html">首頁</a>
@@ -791,6 +879,22 @@ function switchTab(tab) {
 function fakeLogin() { closeOverlay('auth-overlay'); showToast('登入成功！歡迎回來 🐰'); }
 function fakeRegister() { closeOverlay('auth-overlay'); showToast('註冊成功！歡迎加入 Bunny Bliss 🎉'); }
 function closeOverlay(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = ''; }
+
+// ── Mobile Nav ──
+function toggleMobileNav() {
+  const open = document.getElementById('mob-drawer').classList.toggle('open');
+  document.getElementById('mob-overlay').style.display = open ? 'block' : 'none';
+  setTimeout(() => document.getElementById('mob-overlay').classList.toggle('active', open), 10);
+  document.getElementById('hamburger').classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+function closeMobileNav() {
+  document.getElementById('mob-drawer').classList.remove('open');
+  document.getElementById('mob-overlay').classList.remove('active');
+  document.getElementById('hamburger').classList.remove('open');
+  setTimeout(() => { document.getElementById('mob-overlay').style.display = 'none'; }, 300);
+  document.body.style.overflow = '';
+}
 
 // ── Scroll header ──
 window.addEventListener('scroll', () => document.getElementById('site-header').classList.toggle('scrolled', scrollY > 10));
