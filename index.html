@@ -380,6 +380,9 @@
     /* ── Responsive ── */
     @media (max-width: 768px) {
       nav { display: none; }
+      .header-inner { height: 64px; padding: 0 16px; gap: 12px; }
+      .logo img { height: 44px; }
+      .btn-text, .btn-divider { display: none; }
       .hero-content { flex-direction: column; text-align: center; padding: 40px 24px; }
       .hero-visual { width: 100%; }
       .hero-visual img { width: 200px; height: 200px; }
@@ -390,8 +393,11 @@
       .brand-text p { text-align: center; }
       .footer-grid { grid-template-columns: 1fr; }
       .cart-drawer { width: 100%; }
-      .products-grid { grid-template-columns: 1fr; }
+      .products-grid { grid-template-columns: 1fr 1fr; }
       .carousel-arrow { display: none; }
+    }
+    @media (max-width: 480px) {
+      .products-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
