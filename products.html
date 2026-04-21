@@ -522,7 +522,7 @@ function renderProducts() {
     const cat = cats.find(c=>c.id===p.categoryId);
     return `<a class="product-card" href="product-detail.html?id=${p.id}">
       <div class="product-img-wrap">
-        <img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.style.display='none'">
+        <img src="${esc((p.images&&p.images[0])||p.image||'')}" alt="${esc(p.name)}" onerror="this.style.display='none'">
         ${p.badge?`<span class="product-badge" style="background:${esc(p.badgeColor||'#f2b8c6')};color:#3d2b1f">${esc(p.badge)}</span>`:''}
         ${cat?`<span class="product-cat-tag" style="background:${cat.color}cc;color:#3d2b1f">${esc(cat.name)}</span>`:''}
       </div>
@@ -531,7 +531,7 @@ function renderProducts() {
         <div class="product-desc">${esc(p.desc)}</div>
         <div class="product-footer">
           <div class="product-price">NT$${p.price} <small>/ 盒</small></div>
-          <button class="btn-add-cart" onclick="event.preventDefault();event.stopPropagation();addToCart({name:'${esc(p.name)}',price:${p.price},image:'${esc(p.image)}'})">+</button>
+          <button class="btn-add-cart" onclick="event.preventDefault();event.stopPropagation();addToCart({name:'${esc(p.name)}',price:${p.price},image:'${esc((p.images&&p.images[0])||p.image||'')}'})">+</button>
         </div>
       </div>
     </a>`;

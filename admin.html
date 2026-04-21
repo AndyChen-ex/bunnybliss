@@ -228,6 +228,14 @@
     .img-preview-wrap { margin-top: 8px; }
     .img-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: var(--radius-sm); border: 1.5px solid var(--cream-dark); display: none; }
     .img-preview.show { display: block; }
+    .img-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .img-row input { flex: 1; }
+    .img-row-thumb { width: 48px; height: 48px; flex-shrink: 0; border-radius: 6px; overflow: hidden; background: var(--cream-dark); border: 1px solid var(--cream-dark); }
+    .img-row-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .btn-rm-img { background: none; border: none; cursor: pointer; color: var(--brown-light); font-size: 16px; padding: 4px 8px; flex-shrink: 0; transition: color 0.2s; }
+    .btn-rm-img:hover { color: #e05555; }
+    .btn-add-img { background: none; border: 1.5px dashed var(--gold-light); color: var(--gold); padding: 8px 16px; border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px; transition: all 0.2s; }
+    .btn-add-img:hover { background: var(--cream-dark); }
     .color-row { display: flex; align-items: center; gap: 10px; }
     .color-row input[type=color] { width: 40px; height: 38px; padding: 2px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
     .color-row input[type=text] { flex: 1; }
@@ -638,10 +646,10 @@
         <textarea id="p-desc" rows="3" placeholder="商品描述..."></textarea>
       </div>
       <div class="form-group">
-        <label>商品圖片路徑或網址</label>
-        <input type="text" id="p-image" placeholder="e.g. roll-original.jpg 或 https://..." oninput="previewImg('p-image','p-img-preview')">
-        <div class="img-preview-wrap"><img id="p-img-preview" class="img-preview" src="" alt="預覽"></div>
-        <p class="form-hint">可輸入相對路徑（同資料夾的圖片名稱）或完整網址</p>
+        <label>商品圖片（可新增多張，第一張為主圖）</label>
+        <div id="p-images-list"></div>
+        <button type="button" class="btn-add-img" onclick="addProductImageRow('')">＋ 新增圖片</button>
+        <p class="form-hint">可輸入相對路徑（如 roll-original.jpg）或完整網址</p>
       </div>
       <div class="form-group">
         <label>商品分類</label>
@@ -1129,20 +1137,23 @@ function openProductModal(id) {
     document.getElementById('p-name').value = p.name || '';
     document.getElementById('p-price').value = p.price || '';
     document.getElementById('p-desc').value = p.desc || '';
-    document.getElementById('p-image').value = p.image || '';
     document.getElementById('p-badge').value = p.badge || '';
     document.getElementById('p-badge-color').value = p.badgeColor || '#f2b8c6';
     document.getElementById('p-badge-color-picker').value = p.badgeColor || '#f2b8c6';
     document.getElementById('p-active').value = p.active ? '1' : '0';
     populateCategorySelect(p.categoryId || null);
-    previewImg('p-image','p-img-preview');
+    document.getElementById('p-images-list').innerHTML = '';
+    const imgs = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
+    imgs.forEach(src => addProductImageRow(src));
+    if (!imgs.length) addProductImageRow('');
   } else {
-    ['p-name','p-price','p-desc','p-image','p-badge'].forEach(id=>{document.getElementById(id).value='';});
+    ['p-name','p-price','p-desc','p-badge'].forEach(id=>{document.getElementById(id).value='';});
     document.getElementById('p-badge-color').value = '#f2b8c6';
     document.getElementById('p-badge-color-picker').value = '#f2b8c6';
     document.getElementById('p-active').value = '1';
     populateCategorySelect(null);
-    document.getElementById('p-img-preview').classList.remove('show');
+    document.getElementById('p-images-list').innerHTML = '';
+    addProductImageRow('');
   }
   document.getElementById('product-modal-overlay').classList.add('active');
 }
@@ -1154,7 +1165,8 @@ function saveProduct() {
     name: document.getElementById('p-name').value.trim(),
     price: parseInt(document.getElementById('p-price').value) || 0,
     desc: document.getElementById('p-desc').value.trim(),
-    image: document.getElementById('p-image').value.trim(),
+    images: Array.from(document.querySelectorAll('#p-images-list .img-row-input')).map(el=>el.value.trim()).filter(Boolean),
+    image: (document.querySelector('#p-images-list .img-row-input')||{value:''}).value.trim(),
     badge: document.getElementById('p-badge').value.trim(),
     badgeColor: document.getElementById('p-badge-color').value.trim(),
     active: document.getElementById('p-active').value === '1',
@@ -1203,6 +1215,22 @@ function doDelete() {
   updateBadges();
   closeConfirm();
   showToast('已刪除');
+}
+
+// ── Multi-image helpers ──
+function addProductImageRow(value) {
+  const list = document.getElementById('p-images-list');
+  const i = list.children.length;
+  const div = document.createElement('div');
+  div.className = 'img-row';
+  const v = (value||'').replace(/"/g,'&quot;');
+  div.innerHTML = `<input type="text" class="img-row-input" value="${v}" placeholder="${i===0?'主圖路徑或網址':'圖片路徑或網址'}" oninput="updateImgRowPreview(this)"><div class="img-row-thumb">${value?`<img src="${v}" onerror="this.style.display='none'">`:''}</div><button type="button" class="btn-rm-img" onclick="this.closest('.img-row').remove()" title="移除">✕</button>`;
+  list.appendChild(div);
+}
+function updateImgRowPreview(input) {
+  const thumb = input.nextElementSibling;
+  const src = input.value.trim();
+  thumb.innerHTML = src ? `<img src="${src.replace(/"/g,'&quot;')}" onerror="this.style.display='none'">` : '';
 }
 
 // ── Helpers ──
