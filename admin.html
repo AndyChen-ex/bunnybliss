@@ -581,7 +581,7 @@
       </div>
       <div class="form-group">
         <label>插圖路徑或網址</label>
-        <input type="text" id="b-illus" placeholder="e.g. 捲捲棒.jpg 或 https://..." oninput="previewImg('b-illus','b-illus-preview')">
+        <input type="text" id="b-illus" placeholder="e.g. roll-original.jpg 或 https://..." oninput="previewImg('b-illus','b-illus-preview')">
         <div class="img-preview-wrap"><img id="b-illus-preview" class="img-preview" src="" alt="預覽"></div>
       </div>
       <div class="form-group">
@@ -639,7 +639,7 @@
       </div>
       <div class="form-group">
         <label>商品圖片路徑或網址</label>
-        <input type="text" id="p-image" placeholder="e.g. 捲捲棒.jpg 或 https://..." oninput="previewImg('p-image','p-img-preview')">
+        <input type="text" id="p-image" placeholder="e.g. roll-original.jpg 或 https://..." oninput="previewImg('p-image','p-img-preview')">
         <div class="img-preview-wrap"><img id="p-img-preview" class="img-preview" src="" alt="預覽"></div>
         <p class="form-hint">可輸入相對路徑（同資料夾的圖片名稱）或完整網址</p>
       </div>
@@ -816,14 +816,14 @@ function populateCategorySelect(selectedId) {
 
 // ── Data ──
 const DEFAULT_BANNERS = [
-  { id:1, active:true, tag:'手工現烤 ✦ 職人甜點', title:'每一口，\n都是幸福滋味', desc:'Bunny Bliss 精選職人配方，以最純粹的食材手工製作，\n酥脆捲捲棒、層次豐富千層酥，\n讓每個瞬間都充滿甜蜜。', illustration:'658556235_18076090241232815_7694748661845347653_n.jpg', bgImage:'', cta1:'立即選購', cta2:'品牌故事', gradient:GRADIENTS[0] },
-  { id:2, active:true, tag:'季節限定 ✦ 紅茶烏龍', title:'台灣茶葉，\n千層香氣', desc:'精選台灣烏龍茶與阿薩姆紅茶，\n撒上杏仁片烘焙，每一層都是驚喜。', illustration:'紅茶烏龍千層.jpg', bgImage:'', cta1:'立即選購', cta2:'', gradient:GRADIENTS[2] },
-  { id:3, active:true, tag:'人氣首選 ✦ 巧克力', title:'比利時可可，\n濃郁苦甜', desc:'採用比利時頂級可可粉融入酥皮，\n深邃苦甜香氣，層次豐富令人回味。', illustration:'巧克力捲捲棒.jpg', bgImage:'', cta1:'立即選購', cta2:'', gradient:GRADIENTS[4] }
+  { id:1, active:true, tag:'手工現烤 ✦ 職人甜點', title:'每一口，\n都是幸福滋味', desc:'Bunny Bliss 精選職人配方，以最純粹的食材手工製作，\n酥脆捲捲棒、層次豐富千層酥，\n讓每個瞬間都充滿甜蜜。', illustration:'bunny-cookie.jpg', bgImage:'', cta1:'立即選購', cta2:'品牌故事', gradient:GRADIENTS[0] },
+  { id:2, active:true, tag:'季節限定 ✦ 紅茶烏龍', title:'台灣茶葉，\n千層香氣', desc:'精選台灣烏龍茶與阿薩姆紅茶，\n撒上杏仁片烘焙，每一層都是驚喜。', illustration:'mille-feuille.jpg', bgImage:'', cta1:'立即選購', cta2:'', gradient:GRADIENTS[2] },
+  { id:3, active:true, tag:'人氣首選 ✦ 巧克力', title:'比利時可可，\n濃郁苦甜', desc:'採用比利時頂級可可粉融入酥皮，\n深邃苦甜香氣，層次豐富令人回味。', illustration:'roll-chocolate.jpg', bgImage:'', cta1:'立即選購', cta2:'', gradient:GRADIENTS[4] }
 ];
 const DEFAULT_PRODUCTS = [
-  { id:1, active:true, name:'捲捲棒（原味）', price:280, desc:'以法式酥皮工藝手工製作，層層酥脆、入口即化，撒上細砂糖烤出焦糖香氣', image:'捲捲棒.jpg', badge:'🔥 人氣首選', badgeColor:'#f2b8c6', order:0 },
-  { id:2, active:true, name:'巧克力捲捲棒', price:300, desc:'採用比利時可可粉融入酥皮，深邃苦甜巧克力香氣，層次豐富令人回味無窮', image:'巧克力捲捲棒.jpg', badge:'✨ 新品上市', badgeColor:'#d4a8c7', order:1 },
-  { id:3, active:true, name:'紅茶烏龍千層酥', price:320, desc:'精選台灣烏龍茶融合阿薩姆紅茶，撒上杏仁片烘焙，千層酥皮帶來絕佳口感', image:'紅茶烏龍千層.jpg', badge:'🍵 季節限定', badgeColor:'#c4d4a8', order:2 }
+  { id:1, active:true, name:'捲捲棒（原味）', price:280, desc:'以法式酥皮工藝手工製作，層層酥脆、入口即化，撒上細砂糖烤出焦糖香氣', image:'roll-original.jpg', badge:'🔥 人氣首選', badgeColor:'#f2b8c6', order:0 },
+  { id:2, active:true, name:'巧克力捲捲棒', price:300, desc:'採用比利時可可粉融入酥皮，深邃苦甜巧克力香氣，層次豐富令人回味無窮', image:'roll-chocolate.jpg', badge:'✨ 新品上市', badgeColor:'#d4a8c7', order:1 },
+  { id:3, active:true, name:'紅茶烏龍千層酥', price:320, desc:'精選台灣烏龍茶融合阿薩姆紅茶，撒上杏仁片烘焙，千層酥皮帶來絕佳口感', image:'mille-feuille.jpg', badge:'🍵 季節限定', badgeColor:'#c4d4a8', order:2 }
 ];
 
 function getBanners() { const r = localStorage.getItem('bb_banners'); return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_BANNERS)); }

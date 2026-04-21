@@ -244,9 +244,9 @@ const DEFAULT_CATEGORIES = [
   {id:4,name:'禮盒組合',color:'#a8c4d4',order:3},
 ];
 const DEFAULT_PRODUCTS = [
-  {id:1,active:true,name:'捲捲棒（原味）',price:280,desc:'以法式酥皮工藝手工製作，層層酥脆、入口即化，撒上細砂糖烤出焦糖香氣。每一根都是職人用心的結晶，讓您感受最純粹的酥脆滋味。',image:'捲捲棒.jpg',badge:'🔥 人氣首選',badgeColor:'#f2b8c6',order:0,categoryId:1},
-  {id:2,active:true,name:'巧克力捲捲棒',price:300,desc:'採用比利時頂級可可粉融入法式酥皮，深邃苦甜巧克力香氣與層層酥脆口感相互輝映，每一口都令人回味無窮。',image:'巧克力捲捲棒.jpg',badge:'✨ 新品上市',badgeColor:'#d4a8c7',order:1,categoryId:1},
-  {id:3,active:true,name:'紅茶烏龍千層酥',price:320,desc:'精選台灣烏龍茶融合阿薩姆紅茶，撒上烘焙杏仁片，千層酥皮層層分明，茶香悠長，每一塊都是下午茶的最佳伴侶。',image:'紅茶烏龍千層.jpg',badge:'🍵 季節限定',badgeColor:'#c4d4a8',order:2,categoryId:2},
+  {id:1,active:true,name:'捲捲棒（原味）',price:280,desc:'以法式酥皮工藝手工製作，層層酥脆、入口即化，撒上細砂糖烤出焦糖香氣。每一根都是職人用心的結晶，讓您感受最純粹的酥脆滋味。',image:'roll-original.jpg',badge:'🔥 人氣首選',badgeColor:'#f2b8c6',order:0,categoryId:1},
+  {id:2,active:true,name:'巧克力捲捲棒',price:300,desc:'採用比利時頂級可可粉融入法式酥皮，深邃苦甜巧克力香氣與層層酥脆口感相互輝映，每一口都令人回味無窮。',image:'roll-chocolate.jpg',badge:'✨ 新品上市',badgeColor:'#d4a8c7',order:1,categoryId:1},
+  {id:3,active:true,name:'紅茶烏龍千層酥',price:320,desc:'精選台灣烏龍茶融合阿薩姆紅茶，撒上烘焙杏仁片，千層酥皮層層分明，茶香悠長，每一塊都是下午茶的最佳伴侶。',image:'mille-feuille.jpg',badge:'🍵 季節限定',badgeColor:'#c4d4a8',order:2,categoryId:2},
 ];
 
 function getCategories(){const r=localStorage.getItem('bb_categories');return r?JSON.parse(r):DEFAULT_CATEGORIES;}
