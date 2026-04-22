@@ -162,6 +162,23 @@
     .tag-active { background: #e8f5e9; color: #2e7d32; }
     .tag-hidden { background: #fce4ec; color: #c62828; }
     .tag-slide { background: var(--pink-light); color: var(--gold-dark); }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .status-badge.active { background: #e8f5e9; color: #2e7d32; }
+    .status-badge.inactive { background: var(--cream-dark); color: var(--brown-light); }
+    .ord-待付款 { background: #fff3e0; color: #e65100; }
+    .ord-已付款 { background: #e8f5e9; color: #2e7d32; }
+    .ord-處理中 { background: #e3f2fd; color: #1565c0; }
+    .ord-已出貨 { background: #ede7f6; color: #4527a0; }
+    .ord-已完成 { background: #e8f5e9; color: #1b5e20; }
+    .ord-已取消 { background: #fce4ec; color: #c62828; }
+    .order-status-select { border: 1.5px solid var(--cream-dark); border-radius: 8px; padding: 4px 8px; font-family: inherit; font-size: 12px; color: var(--brown); background: var(--white); cursor: pointer; outline: none; }
+    .order-status-select:focus { border-color: var(--gold); }
+    .filter-btn { padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--cream-dark); background: none; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--brown-mid); transition: all 0.2s; }
+    .filter-btn.active { background: var(--gold); color: var(--white); border-color: var(--gold); }
+    .order-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .order-detail-block { background: var(--cream); border-radius: 10px; padding: 14px; }
+    .order-detail-block h4 { font-size: 12px; font-weight: 700; color: var(--brown-light); margin-bottom: 8px; letter-spacing: 0.4px; }
+    .order-detail-block p { font-size: 13px; color: var(--brown-mid); line-height: 1.8; }
 
     .action-btns { display: flex; gap: 6px; }
     .btn-icon {
@@ -416,6 +433,13 @@
         <span class="nav-icon">🎁</span><span class="nav-label">加購選項</span>
         <span class="nav-badge" id="badge-addons">0</span>
       </button>
+      <button class="nav-item" id="nav-orders" onclick="switchPanel('orders')">
+        <span class="nav-icon">📋</span><span class="nav-label">訂單管理</span>
+        <span class="nav-badge" id="badge-orders">0</span>
+      </button>
+      <button class="nav-item" id="nav-settings" onclick="switchPanel('settings')">
+        <span class="nav-icon">⚙️</span><span class="nav-label">商店設定</span>
+      </button>
     </nav>
     <div class="sidebar-bottom">
       <a href="index.html" target="_blank" class="btn-preview">↗ 查看前台</a>
@@ -556,6 +580,52 @@
           <div class="empty-state" id="products-empty" style="display:none">
             <div class="icon">🍪</div>
             <p>尚無商品，點擊右上角「新增商品」</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders Panel -->
+      <div class="panel" id="panel-orders">
+        <div class="table-card">
+          <div class="table-card-header">
+            <h3>訂單列表</h3>
+            <span id="orders-count"></span>
+          </div>
+          <div style="padding:0 20px 12px;display:flex;gap:8px;flex-wrap:wrap" id="order-status-filter"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>訂單編號</th>
+                <th>日期</th>
+                <th>客戶</th>
+                <th>配送</th>
+                <th>金額</th>
+                <th>狀態</th>
+                <th style="width:80px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="orders-tbody"></tbody>
+          </table>
+          <div class="table-empty" id="orders-empty" style="display:none"><p>尚無訂單</p></div>
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div class="panel" id="panel-settings">
+        <div class="table-card">
+          <div class="table-card-header"><h3>付款資訊設定</h3></div>
+          <div style="padding:20px">
+            <div class="form-group">
+              <label>LINE Pay 付款說明</label>
+              <textarea id="s-linepay" rows="3" placeholder="例如：LINE Pay ID: @bunnybliss&#10;請加好友後傳送付款截圖"></textarea>
+              <p class="form-hint">下單後顯示給選擇 LINE Pay 的客戶</p>
+            </div>
+            <div class="form-group">
+              <label>銀行匯款資訊</label>
+              <textarea id="s-transfer" rows="4" placeholder="例如：銀行：台灣銀行&#10;帳號：123-456-7890123&#10;戶名：Bunny Bliss"></textarea>
+              <p class="form-hint">下單後顯示給選擇匯款的客戶</p>
+            </div>
+            <button class="btn-save" onclick="saveSettings()">儲存設定</button>
           </div>
         </div>
       </div>
@@ -712,6 +782,20 @@
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('product')">取消</button>
       <button class="btn-save" onclick="saveProduct()">儲存商品</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="order-modal-overlay" onclick="closeModal('order')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
+    <div class="modal-header">
+      <h3 id="order-modal-title">訂單詳情</h3>
+      <button class="modal-close" onclick="closeModal('order')">✕</button>
+    </div>
+    <div class="modal-body" id="order-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('order')">關閉</button>
     </div>
   </div>
 </div>
@@ -974,7 +1058,7 @@ function switchPanel(name) {
   document.getElementById('panel-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
 
-  const titles = { dashboard:'總覽', banners:'橫幅管理', categories:'分類管理', products:'商品管理', addons:'加購選項' };
+  const titles = { dashboard:'總覽', banners:'橫幅管理', categories:'分類管理', products:'商品管理', addons:'加購選項', orders:'訂單管理', settings:'商店設定' };
   document.getElementById('topbar-title').textContent = titles[name];
 
   const addBtn = document.getElementById('topbar-add-btn');
@@ -1006,6 +1090,7 @@ function updateBadges() {
   document.getElementById('badge-categories').textContent = categories.length;
   document.getElementById('badge-products').textContent = products.filter(p=>p.active).length;
   document.getElementById('badge-addons').textContent = getAddons().filter(a=>a.active).length;
+  document.getElementById('badge-orders').textContent = getOrders().filter(o=>o.status==='待付款').length;
 }
 
 function renderCurrentPanel() {
@@ -1014,6 +1099,8 @@ function renderCurrentPanel() {
   if (currentPanel === 'categories') renderCategoriesPanel();
   if (currentPanel === 'products') renderProductsPanel();
   if (currentPanel === 'addons') renderAddonsPanel();
+  if (currentPanel === 'orders') renderOrdersPanel();
+  if (currentPanel === 'settings') renderSettingsPanel();
 }
 
 // ── Dashboard ──
@@ -1379,6 +1466,102 @@ function updateImgRowPreview(input) {
 // ── Helpers ──
 function closeModal(type) {
   document.getElementById(type+'-modal-overlay').classList.remove('active');
+}
+
+// ── Orders ──
+const ORDER_STATUSES = ['待付款','已付款','處理中','已出貨','已完成','已取消'];
+let orderFilter = '全部';
+
+function getOrders() { return JSON.parse(localStorage.getItem('bb_orders')||'[]'); }
+function saveOrders(o) { localStorage.setItem('bb_orders', JSON.stringify(o)); }
+
+function renderOrdersPanel() {
+  const all = getOrders();
+  const filterBar = document.getElementById('order-status-filter');
+  const counts = {};
+  all.forEach(o => { counts[o.status] = (counts[o.status]||0)+1; });
+  filterBar.innerHTML = ['全部',...ORDER_STATUSES].map(s => {
+    const n = s==='全部' ? all.length : (counts[s]||0);
+    return `<button class="filter-btn${orderFilter===s?' active':''}" onclick="setOrderFilter('${s}')">${s}${n?` (${n})`:''}</button>`;
+  }).join('');
+
+  const orders = orderFilter==='全部' ? all : all.filter(o=>o.status===orderFilter);
+  document.getElementById('orders-count').textContent = `共 ${all.length} 筆訂單`;
+  const empty = document.getElementById('orders-empty');
+  const tbody = document.getElementById('orders-tbody');
+  if (!orders.length) { tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  tbody.innerHTML = orders.map(o => {
+    const d = new Date(o.createdAt);
+    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const shipIcon = o.shipping?.method==='711'?'🏪':'🚚';
+    return `<tr>
+      <td style="font-size:12px;font-weight:700;color:var(--brown)">${esc(o.id)}</td>
+      <td style="font-size:12px;color:var(--brown-light)">${dateStr}</td>
+      <td><div style="font-weight:600;font-size:13px">${esc(o.customer?.name||'')}</div><div style="font-size:11px;color:var(--brown-light)">${esc(o.customer?.phone||'')}</div></td>
+      <td style="font-size:12px">${shipIcon} ${o.shipping?.method==='711'?'超商取貨':'宅急便'}</td>
+      <td style="font-weight:700;color:var(--gold)">NT$${o.total}</td>
+      <td>
+        <select class="order-status-select" onchange="updateOrderStatus('${o.id}',this.value)">
+          ${ORDER_STATUSES.map(s=>`<option${s===o.status?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td><button class="btn-edit" onclick="openOrderModal('${o.id}')">詳情</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function setOrderFilter(f) { orderFilter = f; renderOrdersPanel(); }
+
+function updateOrderStatus(id, status) {
+  const orders = getOrders();
+  const i = orders.findIndex(o=>o.id===id);
+  if (i>=0) orders[i].status = status;
+  saveOrders(orders);
+  updateBadges();
+}
+
+function openOrderModal(id) {
+  const o = getOrders().find(x=>x.id===id);
+  if (!o) return;
+  document.getElementById('order-modal-title').textContent = `訂單 ${o.id}`;
+  const payLabel = o.payment?.method==='linepay'?'💚 LINE Pay':'🏦 銀行匯款';
+  const d = new Date(o.createdAt);
+  document.getElementById('order-modal-body').innerHTML = `
+    <div class="order-detail-grid">
+      <div class="order-detail-block"><h4>收件人</h4><p>${esc(o.customer?.name||'')}<br>${esc(o.customer?.phone||'')}${o.customer?.email?`<br>${esc(o.customer.email)}`:''}</p></div>
+      <div class="order-detail-block"><h4>配送資訊</h4><p>${o.shipping?.method==='711'?'🏪 超商取貨':'🚚 宅急便'}<br>${esc(o.shipping?.address||'')}${o.shipping?.fee?`<br>運費：NT$${o.shipping.fee}`:''}</p></div>
+      <div class="order-detail-block"><h4>付款方式</h4><p>${payLabel}</p></div>
+      <div class="order-detail-block"><h4>下單時間</h4><p>${d.toLocaleString('zh-TW')}</p></div>
+    </div>
+    <div class="form-group"><label>訂單狀態</label>
+      <select class="order-status-select" style="width:100%;padding:9px 12px;font-size:14px" onchange="updateOrderStatus('${o.id}',this.value);renderOrdersPanel()">
+        ${ORDER_STATUSES.map(s=>`<option${s===o.status?' selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div style="border-top:1px solid var(--cream-dark);padding-top:14px;margin-top:4px">
+      <div style="font-size:12px;font-weight:700;color:var(--brown-light);margin-bottom:8px;letter-spacing:0.4px">商品明細</div>
+      ${(o.items||[]).map(item=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--cream-dark);font-size:13px"><span>${esc(item.name)} × ${item.qty}</span><span style="font-weight:700;color:var(--gold)">NT$${item.price*item.qty}</span></div>`).join('')}
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--brown-mid);margin-top:8px"><span>運費</span><span>NT$${o.shipping?.fee||0}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:8px;padding-top:8px;border-top:2px solid var(--cream-dark)"><span>合計</span><span style="color:var(--gold)">NT$${o.total}</span></div>
+    </div>`;
+  document.getElementById('order-modal-overlay').classList.add('active');
+}
+
+// ── Settings ──
+function getSettings() { return JSON.parse(localStorage.getItem('bb_settings')||'{}'); }
+function saveSettings() {
+  const s = {
+    linePayInfo: document.getElementById('s-linepay').value.trim(),
+    transferInfo: document.getElementById('s-transfer').value.trim()
+  };
+  localStorage.setItem('bb_settings', JSON.stringify(s));
+  showToast('設定已儲存 ✓');
+}
+function renderSettingsPanel() {
+  const s = getSettings();
+  document.getElementById('s-linepay').value = s.linePayInfo || '';
+  document.getElementById('s-transfer').value = s.transferInfo || '';
 }
 
 // ── Addons ──
