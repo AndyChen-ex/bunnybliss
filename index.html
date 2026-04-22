@@ -779,7 +779,7 @@ function renderProducts() {
         <div class="product-name">${escHtml(p.name)}</div>
         <div class="product-desc">${escHtml(p.desc)}</div>
         <div class="product-footer">
-          <div class="product-price">NT$${p.price} <span>/ 盒</span></div>
+          <div class="product-price">${(()=>{const t=p.priceTiers&&p.priceTiers.length;const minP=t?Math.min(...p.priceTiers.map(x=>x.price)):p.price;return `NT$${minP}${t?' <span>起 / 盒</span>':' <span>/ 盒</span>'}`;})()} </div>
           <button class="btn-add-cart" onclick="event.preventDefault();event.stopPropagation();addToCart(${escAttr(JSON.stringify({name:p.name,price:p.price,image:(p.images&&p.images[0])||p.image||''}))})">+</button>
         </div>
       </div>

@@ -236,6 +236,9 @@
     .btn-rm-img:hover { color: #e05555; }
     .btn-add-img { background: none; border: 1.5px dashed var(--gold-light); color: var(--gold); padding: 8px 16px; border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px; transition: all 0.2s; }
     .btn-add-img:hover { background: var(--cream-dark); }
+    .tier-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    .tier-row input { width: 80px; flex-shrink: 0; }
+    .tier-sep { font-size: 13px; color: var(--brown-light); flex-shrink: 0; white-space: nowrap; }
     .color-row { display: flex; align-items: center; gap: 10px; }
     .color-row input[type=color] { width: 40px; height: 38px; padding: 2px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
     .color-row input[type=text] { flex: 1; }
@@ -668,6 +671,12 @@
             <option value="0">已下架</option>
           </select>
         </div>
+      </div>
+      <div class="form-group">
+        <label>階梯定價（選填）</label>
+        <div id="p-tiers-list"></div>
+        <button type="button" class="btn-add-img" onclick="addTierRow({})">＋ 新增階梯</button>
+        <p class="form-hint">依數量自動套用不同單價；未設定則直接使用上方售價</p>
       </div>
       <div class="form-group">
         <label>商品描述</label>
@@ -1260,6 +1269,8 @@ function openProductModal(id) {
     const imgs = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
     imgs.forEach(src => addProductImageRow(src));
     if (!imgs.length) addProductImageRow('');
+    document.getElementById('p-tiers-list').innerHTML = '';
+    (p.priceTiers || []).forEach(t => addTierRow(t));
   } else {
     ['p-name','p-price','p-desc','p-badge'].forEach(id=>{document.getElementById(id).value='';});
     document.getElementById('p-badge-color').value = '#f2b8c6';
@@ -1268,6 +1279,7 @@ function openProductModal(id) {
     populateCategorySelect(null);
     document.getElementById('p-images-list').innerHTML = '';
     addProductImageRow('');
+    document.getElementById('p-tiers-list').innerHTML = '';
   }
   document.getElementById('product-modal-overlay').classList.add('active');
 }
@@ -1281,6 +1293,10 @@ function saveProduct() {
     desc: document.getElementById('p-desc').value.trim(),
     images: Array.from(document.querySelectorAll('#p-images-list .img-row-input')).map(el=>el.value.trim()).filter(Boolean),
     image: (document.querySelector('#p-images-list .img-row-input')||{value:''}).value.trim(),
+    priceTiers: Array.from(document.querySelectorAll('#p-tiers-list .tier-row')).map(row=>({
+      minQty: parseInt(row.querySelector('.tier-min').value)||1,
+      price: parseInt(row.querySelector('.tier-price').value)||0
+    })).filter(t=>t.price>0).sort((a,b)=>a.minQty-b.minQty),
     badge: document.getElementById('p-badge').value.trim(),
     badgeColor: document.getElementById('p-badge-color').value.trim(),
     active: document.getElementById('p-active').value === '1',
@@ -1345,6 +1361,15 @@ function addProductImageRow(value) {
   div.innerHTML = `<input type="text" class="img-row-input" value="${v}" placeholder="${i===0?'主圖路徑或網址':'圖片路徑或網址'}" oninput="updateImgRowPreview(this)"><div class="img-row-thumb">${value?`<img src="${v}" onerror="this.style.display='none'">`:''}</div><button type="button" class="btn-rm-img" onclick="this.closest('.img-row').remove()" title="移除">✕</button>`;
   list.appendChild(div);
 }
+function addTierRow(tier) {
+  const list = document.getElementById('p-tiers-list');
+  const i = list.children.length;
+  const div = document.createElement('div');
+  div.className = 'tier-row';
+  div.innerHTML = `<span class="tier-sep">滿</span><input type="number" class="tier-min" value="${tier.minQty||''}" placeholder="${i===0?1:''}" min="1"><span class="tier-sep">份</span><span class="tier-sep">單價</span><input type="number" class="tier-price" value="${tier.price||''}" placeholder="單價" min="0"><span class="tier-sep">元 / 盒</span><button type="button" class="btn-rm-img" onclick="this.closest('.tier-row').remove()">✕</button>`;
+  list.appendChild(div);
+}
+
 function updateImgRowPreview(input) {
   const thumb = input.nextElementSibling;
   const src = input.value.trim();

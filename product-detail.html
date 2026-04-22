@@ -119,6 +119,15 @@
 
     .detail-desc { font-size: 15px; color: var(--brown-mid); line-height: 2; margin-bottom: 28px; }
 
+    /* Price tiers */
+    .tier-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; border-radius: 10px; overflow: hidden; }
+    .tier-table th { background: var(--cream-dark); padding: 8px 14px; text-align: left; color: var(--brown-light); font-weight: 700; letter-spacing: 0.4px; }
+    .tier-table td { padding: 9px 14px; border-bottom: 1px solid var(--cream-dark); color: var(--brown-mid); }
+    .tier-table tr:last-child td { border-bottom: none; }
+    .tier-table tr.tier-active td { color: var(--gold); font-weight: 700; background: #fff8f0; }
+    .tier-table tr.tier-active td:first-child { border-left: 3px solid var(--gold); padding-left: 11px; }
+    .tier-current-tag { display: inline-block; font-size: 10px; font-weight: 700; background: var(--gold); color: var(--white); padding: 2px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+
     /* Quantity */
     .qty-label { font-size: 13px; font-weight: 700; color: var(--brown-mid); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px; }
     .qty-row { display: flex; align-items: center; gap: 0; margin-bottom: 20px; width: fit-content; }
@@ -388,16 +397,27 @@ function render() {
       <div class="detail-info-col">
         ${cat ? `<a class="detail-cat-tag" href="products.html?cat=${cat.id}" style="background:${cat.color}20;color:${cat.color};border:1.5px solid ${cat.color}40">${esc(cat.name)}</a>` : ''}
         <h1 class="detail-name">${esc(product.name)}</h1>
-        <div class="detail-price">NT$${product.price} <small>/ 盒</small></div>
+        <div class="detail-price" id="detail-price-display">NT$${getEffectivePrice(1,product)} <small>/ 盒</small></div>
 
         <div class="detail-divider"></div>
+
+        ${(()=>{
+          const tiers=(product.priceTiers||[]).slice().sort((a,b)=>a.minQty-b.minQty);
+          if(!tiers.length) return '';
+          const rows=tiers.map((t,i)=>{
+            const next=tiers[i+1];
+            const range=next?`${t.minQty} ~ ${next.minQty-1} 份`:`${t.minQty} 份以上`;
+            return `<tr class="tier-row-display${i===0?' tier-active':''}" data-min="${t.minQty}" data-price="${t.price}"><td>${range}</td><td>NT$${t.price} / 盒${i===0?`<span class="tier-current-tag">目前</span>`:''}</td></tr>`;
+          }).join('');
+          return `<table class="tier-table"><thead><tr><th>購買數量</th><th>單價</th></tr></thead><tbody id="tier-tbody">${rows}</tbody></table>`;
+        })()}
 
         <p class="detail-desc">${esc(product.desc)}</p>
 
         <div class="qty-label">數量</div>
         <div class="qty-row">
           <button class="qty-btn" onclick="changeDetailQty(-1)">−</button>
-          <input class="qty-num" type="number" id="detail-qty" value="1" min="1" max="99">
+          <input class="qty-num" type="number" id="detail-qty" value="1" min="1" max="99" oninput="updatePriceDisplay(parseInt(this.value)||1)">
           <button class="qty-btn" onclick="changeDetailQty(1)">+</button>
         </div>
 
@@ -453,10 +473,36 @@ function render() {
   `;
 }
 
+function getEffectivePrice(qty, product) {
+  const tiers = (product.priceTiers||[]).slice().sort((a,b)=>a.minQty-b.minQty);
+  if (!tiers.length) return product.price;
+  let price = product.price;
+  for (const t of tiers) { if (qty >= t.minQty) price = t.price; }
+  return price;
+}
+
+function updatePriceDisplay(qty) {
+  const product = getProducts().find(p => p.id === productId && p.active);
+  if (!product) return;
+  const price = getEffectivePrice(qty, product);
+  const el = document.getElementById('detail-price-display');
+  if (el) el.innerHTML = `NT$${price} <small>/ 盒</small>`;
+  const tiers = (product.priceTiers||[]).slice().sort((a,b)=>a.minQty-b.minQty);
+  document.querySelectorAll('.tier-row-display').forEach((row, i) => {
+    const next = tiers[i+1];
+    const active = qty >= parseInt(row.dataset.min) && (!next || qty < next.minQty);
+    row.classList.toggle('tier-active', active);
+    const td2 = row.querySelectorAll('td')[1];
+    if (td2) td2.innerHTML = `NT$${tiers[i].price} / 盒${active?`<span class="tier-current-tag">目前</span>`:''}`;
+  });
+}
+
 function changeDetailQty(d) {
   const input = document.getElementById('detail-qty');
   if (!input) return;
-  input.value = Math.max(1, Math.min(99, parseInt(input.value || 1) + d));
+  const qty = Math.max(1, Math.min(99, parseInt(input.value || 1) + d));
+  input.value = qty;
+  updatePriceDisplay(qty);
 }
 
 function addDetailToCart() {
@@ -464,13 +510,14 @@ function addDetailToCart() {
   if (!product) return;
   const qty = parseInt(document.getElementById('detail-qty').value) || 1;
   const img = (product.images&&product.images[0])||product.image||'';
+  const basePrice = getEffectivePrice(qty, product);
   const checkedAddons = Array.from(document.querySelectorAll('.addon-row input[type=checkbox]:checked'))
     .map(el => ({ name: el.dataset.addonId ? getAddons().find(a=>a.id===parseInt(el.dataset.addonId))?.name : '', price: parseInt(el.dataset.addonPrice)||0 }))
     .filter(a => a.name);
   const addonPrice = checkedAddons.reduce((s,a) => s+a.price, 0);
   const addonLabel = checkedAddons.length ? `（含${checkedAddons.map(a=>a.name).join('、')}）` : '';
   const name = product.name + addonLabel;
-  const price = product.price + addonPrice;
+  const price = basePrice + addonPrice;
   const ex = cart.find(item => item.name === name);
   if (ex) ex.qty += qty;
   else cart.push({ name, price, image: img, qty });
