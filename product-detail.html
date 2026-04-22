@@ -138,8 +138,10 @@
       color: var(--brown); outline: none; border-left: 1px solid var(--cream); border-right: 1px solid var(--cream);
     }
 
-    /* Add-on */
-    .addon-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding: 14px 16px; background: var(--pink-light); border-radius: 12px; border: 1.5px solid var(--pink); cursor: pointer; user-select: none; }
+    /* Add-ons */
+    .addons-wrap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+    .addon-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--pink-light); border-radius: 12px; border: 1.5px solid var(--pink); cursor: pointer; user-select: none; transition: border-color 0.2s; }
+    .addon-row:has(input:checked) { border-color: var(--gold); background: #fff8f0; }
     .addon-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer; flex-shrink: 0; }
     .addon-label { flex: 1; font-size: 14px; font-weight: 600; color: var(--brown); }
     .addon-price { font-size: 14px; font-weight: 700; color: var(--gold); }
@@ -337,6 +339,7 @@ const DEFAULT_PRODUCTS = [
 
 function getCategories(){const r=localStorage.getItem('bb_categories');return r?JSON.parse(r):DEFAULT_CATEGORIES;}
 function getProducts(){const r=localStorage.getItem('bb_products');return r?JSON.parse(r):DEFAULT_PRODUCTS;}
+function getAddons(){const r=localStorage.getItem('bb_addons');return r?JSON.parse(r):[{id:1,name:'兔子袋款',price:30,active:true}];}
 
 const params = new URLSearchParams(location.search);
 const productId = params.get('id') ? parseInt(params.get('id')) : null;
@@ -400,11 +403,11 @@ function render() {
           <button class="qty-btn" onclick="changeDetailQty(1)">+</button>
         </div>
 
-        <label class="addon-row" for="addon-bunny-bag">
-          <input type="checkbox" id="addon-bunny-bag">
-          <span class="addon-label">🐰 加購兔子袋款</span>
-          <span class="addon-price">+ NT$30</span>
-        </label>
+        ${(()=>{
+          const addons=getAddons().filter(a=>a.active);
+          if(!addons.length) return '';
+          return `<div class="addons-wrap">${addons.map(a=>`<label class="addon-row" for="addon-${a.id}"><input type="checkbox" id="addon-${a.id}" data-addon-id="${a.id}" data-addon-price="${a.price}"><span class="addon-label">🎁 加購${esc(a.name)}</span><span class="addon-price">+ NT$${a.price}</span></label>`).join('')}</div>`;
+        })()}
 
         <div class="cta-row">
           <button class="btn-add-cart-big" onclick="addDetailToCart()">
@@ -463,10 +466,14 @@ function addDetailToCart() {
   const product = getProducts().find(p => p.id === productId && p.active);
   if (!product) return;
   const qty = parseInt(document.getElementById('detail-qty').value) || 1;
-  const withBag = document.getElementById('addon-bunny-bag')?.checked;
   const img = (product.images&&product.images[0])||product.image||'';
-  const price = product.price + (withBag ? 30 : 0);
-  const name = product.name + (withBag ? '（含兔子袋）' : '');
+  const checkedAddons = Array.from(document.querySelectorAll('.addon-row input[type=checkbox]:checked'))
+    .map(el => ({ name: el.dataset.addonId ? getAddons().find(a=>a.id===parseInt(el.dataset.addonId))?.name : '', price: parseInt(el.dataset.addonPrice)||0 }))
+    .filter(a => a.name);
+  const addonPrice = checkedAddons.reduce((s,a) => s+a.price, 0);
+  const addonLabel = checkedAddons.length ? `（含${checkedAddons.map(a=>a.name).join('、')}）` : '';
+  const name = product.name + addonLabel;
+  const price = product.price + addonPrice;
   const ex = cart.find(item => item.name === name);
   if (ex) ex.qty += qty;
   else cart.push({ name, price, image: img, qty });

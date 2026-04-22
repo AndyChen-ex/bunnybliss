@@ -409,6 +409,10 @@
         <span class="nav-icon">🍪</span><span class="nav-label">商品管理</span>
         <span class="nav-badge" id="badge-products">0</span>
       </button>
+      <button class="nav-item" id="nav-addons" onclick="switchPanel('addons')">
+        <span class="nav-icon">🎁</span><span class="nav-label">加購選項</span>
+        <span class="nav-badge" id="badge-addons">0</span>
+      </button>
     </nav>
     <div class="sidebar-bottom">
       <a href="index.html" target="_blank" class="btn-preview">↗ 查看前台</a>
@@ -553,6 +557,30 @@
         </div>
       </div>
 
+      <!-- Addons Panel -->
+      <div class="panel" id="panel-addons">
+        <div class="table-card">
+          <div class="table-card-header">
+            <h3>加購選項</h3>
+            <button class="btn-add" onclick="openAddonModal(null)">+ 新增選項</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>選項名稱</th>
+                <th>加購金額</th>
+                <th>狀態</th>
+                <th style="width:100px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="addons-tbody"></tbody>
+          </table>
+          <div class="table-empty" id="addons-empty" style="display:none">
+            <p>尚無加購選項，點擊「新增選項」</p>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -675,6 +703,37 @@
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('product')">取消</button>
       <button class="btn-save" onclick="saveProduct()">儲存商品</button>
+    </div>
+  </div>
+</div>
+
+<!-- Addon Modal -->
+<div class="modal-overlay" id="addon-modal-overlay" onclick="closeModal('addon')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-header">
+      <h3 id="addon-modal-title">新增加購選項</h3>
+      <button class="modal-close" onclick="closeModal('addon')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>選項名稱</label>
+        <input type="text" id="a-name" placeholder="e.g. 兔子袋款">
+      </div>
+      <div class="form-group">
+        <label>加購金額（NT$）</label>
+        <input type="number" id="a-price" placeholder="30" min="0">
+      </div>
+      <div class="form-group">
+        <label>狀態</label>
+        <select id="a-active">
+          <option value="1">啟用</option>
+          <option value="0">停用</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('addon')">取消</button>
+      <button class="btn-save" onclick="saveAddon()">儲存</button>
     </div>
   </div>
 </div>
@@ -854,11 +913,11 @@ function switchPanel(name) {
   document.getElementById('panel-' + name).classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
 
-  const titles = { dashboard:'總覽', banners:'橫幅管理', categories:'分類管理', products:'商品管理' };
+  const titles = { dashboard:'總覽', banners:'橫幅管理', categories:'分類管理', products:'商品管理', addons:'加購選項' };
   document.getElementById('topbar-title').textContent = titles[name];
 
   const addBtn = document.getElementById('topbar-add-btn');
-  const addLabels = { banners:'+ 新增橫幅', products:'+ 新增商品' };
+  const addLabels = { banners:'+ 新增橫幅', products:'+ 新增商品', addons:'+ 新增選項' };
   if (addLabels[name]) { addBtn.style.display = ''; addBtn.textContent = addLabels[name]; }
   else addBtn.style.display = 'none';
 
@@ -869,6 +928,7 @@ function switchPanel(name) {
 function openAddModal() {
   if (currentPanel === 'banners') openBannerModal(null);
   if (currentPanel === 'products') openProductModal(null);
+  if (currentPanel === 'addons') openAddonModal(null);
 }
 
 function initApp() {
@@ -884,6 +944,7 @@ function updateBadges() {
   document.getElementById('badge-banners').textContent = banners.filter(b=>b.active).length;
   document.getElementById('badge-categories').textContent = categories.length;
   document.getElementById('badge-products').textContent = products.filter(p=>p.active).length;
+  document.getElementById('badge-addons').textContent = getAddons().filter(a=>a.active).length;
 }
 
 function renderCurrentPanel() {
@@ -891,6 +952,7 @@ function renderCurrentPanel() {
   if (currentPanel === 'banners') renderBannersPanel();
   if (currentPanel === 'categories') renderCategoriesPanel();
   if (currentPanel === 'products') renderProductsPanel();
+  if (currentPanel === 'addons') renderAddonsPanel();
 }
 
 // ── Dashboard ──
@@ -1193,7 +1255,8 @@ function saveProduct() {
 let pendingDelete = null;
 function confirmDelete(type, id, name) {
   pendingDelete = { type, id };
-  document.getElementById('confirm-title').textContent = `確認刪除${type==='banner'?'橫幅':'商品'}？`;
+  const labels = { banner:'橫幅', product:'商品', addon:'加購選項' };
+  document.getElementById('confirm-title').textContent = `確認刪除${labels[type]||'項目'}？`;
   document.getElementById('confirm-msg').textContent = `「${name}」刪除後無法復原。`;
   document.getElementById('confirm-ok').onclick = doDelete;
   document.getElementById('confirm-overlay').classList.add('active');
@@ -1208,6 +1271,9 @@ function doDelete() {
   if (type === 'banner') {
     saveBanners(getBanners().filter(b=>b.id!==id));
     renderBannersPanel();
+  } else if (type === 'addon') {
+    saveAddons(getAddons().filter(a=>a.id!==id));
+    renderAddonsPanel();
   } else {
     saveProducts(getProducts().filter(p=>p.id!==id));
     renderProductsPanel();
@@ -1236,6 +1302,72 @@ function updateImgRowPreview(input) {
 // ── Helpers ──
 function closeModal(type) {
   document.getElementById(type+'-modal-overlay').classList.remove('active');
+}
+
+// ── Addons ──
+const DEFAULT_ADDONS = [
+  { id: 1, name: '兔子袋款', price: 30, active: true }
+];
+function getAddons() { const r = localStorage.getItem('bb_addons'); return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_ADDONS)); }
+function saveAddons(a) { localStorage.setItem('bb_addons', JSON.stringify(a)); }
+
+let editingAddonId = null;
+
+function renderAddonsPanel() {
+  const addons = getAddons();
+  const tbody = document.getElementById('addons-tbody');
+  const empty = document.getElementById('addons-empty');
+  if (!addons.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = addons.map(a => `
+    <tr>
+      <td style="font-weight:600;color:var(--brown)">${esc(a.name)}</td>
+      <td style="color:var(--gold);font-weight:700">+ NT$${a.price}</td>
+      <td><span class="status-badge ${a.active?'active':'inactive'}">${a.active?'啟用':'停用'}</span></td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn-edit" onclick="openAddonModal(${a.id})">編輯</button>
+          <button class="btn-delete" onclick="confirmDelete('addon',${a.id},'${esc(a.name)}')">刪除</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openAddonModal(id) {
+  editingAddonId = id;
+  document.getElementById('addon-modal-title').textContent = id ? '編輯加購選項' : '新增加購選項';
+  if (id) {
+    const a = getAddons().find(x => x.id === id);
+    if (!a) return;
+    document.getElementById('a-name').value = a.name || '';
+    document.getElementById('a-price').value = a.price || '';
+    document.getElementById('a-active').value = a.active ? '1' : '0';
+  } else {
+    document.getElementById('a-name').value = '';
+    document.getElementById('a-price').value = '';
+    document.getElementById('a-active').value = '1';
+  }
+  document.getElementById('addon-modal-overlay').classList.add('active');
+}
+
+function saveAddon() {
+  const name = document.getElementById('a-name').value.trim();
+  const price = parseInt(document.getElementById('a-price').value) || 0;
+  const active = document.getElementById('a-active').value === '1';
+  if (!name) { showToast('請填寫選項名稱'); return; }
+  const addons = getAddons();
+  if (editingAddonId) {
+    const i = addons.findIndex(a => a.id === editingAddonId);
+    if (i >= 0) addons[i] = { ...addons[i], name, price, active };
+  } else {
+    const maxId = addons.length ? Math.max(...addons.map(a => a.id)) : 0;
+    addons.push({ id: maxId + 1, name, price, active });
+  }
+  saveAddons(addons);
+  closeModal('addon');
+  renderAddonsPanel();
+  updateBadges();
+  showToast(editingAddonId ? '已更新 ✓' : '已新增 ✓');
 }
 
 function previewImg(inputId, previewId) {
