@@ -707,6 +707,33 @@
   </div>
 </div>
 
+<!-- Category Edit Modal -->
+<div class="modal-overlay" id="category-modal-overlay" onclick="closeModal('category')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+    <div class="modal-header">
+      <h3>編輯分類</h3>
+      <button class="modal-close" onclick="closeModal('category')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>分類名稱</label>
+        <input type="text" id="cat-edit-name" maxlength="20" placeholder="分類名稱">
+      </div>
+      <div class="form-group">
+        <label>分類顏色</label>
+        <div class="color-row">
+          <input type="color" id="cat-edit-color-picker" value="#f2b8c6" oninput="document.getElementById('cat-edit-color').value=this.value">
+          <input type="text" id="cat-edit-color" value="#f2b8c6" placeholder="#f2b8c6" oninput="document.getElementById('cat-edit-color-picker').value=this.value">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('category')">取消</button>
+      <button class="btn-save" onclick="saveCategoryEdit()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- Addon Modal -->
 <div class="modal-overlay" id="addon-modal-overlay" onclick="closeModal('addon')">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
@@ -857,6 +884,7 @@ function renderCategoriesPanel() {
         <div class="action-btns">
           ${i>0?`<button class="btn-icon btn-order" onclick="moveCat(${c.id},-1)">↑</button>`:''}
           ${i<cats.length-1?`<button class="btn-icon btn-order" onclick="moveCat(${c.id},1)">↓</button>`:''}
+          <button class="btn-icon btn-edit" onclick="openCategoryModal(${c.id})">✏</button>
           <button class="btn-icon btn-delete" onclick="deleteCategory(${c.id})">🗑</button>
         </div>
       </td>
@@ -872,6 +900,30 @@ function moveCat(id, dir) {
   [cats[i].order, cats[ni].order] = [cats[ni].order, cats[i].order];
   saveCategories(cats);
   renderCategoriesPanel();
+}
+
+let editingCategoryId = null;
+function openCategoryModal(id) {
+  const cat = getCategories().find(c => c.id === id);
+  if (!cat) return;
+  editingCategoryId = id;
+  document.getElementById('cat-edit-name').value = cat.name;
+  document.getElementById('cat-edit-color').value = cat.color;
+  document.getElementById('cat-edit-color-picker').value = cat.color;
+  document.getElementById('category-modal-overlay').classList.add('active');
+}
+function saveCategoryEdit() {
+  const name = document.getElementById('cat-edit-name').value.trim();
+  if (!name) { showToast('請輸入分類名稱'); return; }
+  const color = document.getElementById('cat-edit-color').value.trim();
+  const cats = getCategories();
+  const i = cats.findIndex(c => c.id === editingCategoryId);
+  if (i >= 0) { cats[i].name = name; cats[i].color = color; }
+  saveCategories(cats);
+  closeModal('category');
+  renderCategoriesPanel();
+  updateBadges();
+  showToast('分類已更新 ✓');
 }
 
 function populateCategorySelect(selectedId) {
