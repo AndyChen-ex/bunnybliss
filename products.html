@@ -50,9 +50,7 @@
       position: relative; transition: background 0.2s;
     }
     .btn-cart:hover { background: var(--gold); }
-    .btn-cart:hover svg path, .btn-cart:hover svg line { stroke: var(--white); }
-    .btn-cart svg { width: 18px; height: 18px; }
-    .btn-cart svg path, .btn-cart svg line { stroke: var(--gold); stroke-width: 1.8; fill: none; transition: stroke 0.2s; }
+    .btn-cart { font-size: 18px; line-height: 1; }
     .cart-badge {
       position: absolute; top: -4px; right: -4px;
       background: var(--pink); color: var(--brown); font-size: 10px; font-weight: 700;
@@ -334,7 +332,7 @@
       <span class="btn-divider">/</span>
       <button class="btn-text" onclick="openAuth('register')">註冊</button>
       <button class="btn-cart" onclick="openCart()">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6" stroke-linecap="round"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        🛒
         <span class="cart-badge" id="cart-badge">0</span>
       </button>
       <button class="hamburger" id="hamburger" onclick="toggleMobileNav()">
