@@ -625,9 +625,15 @@
               <textarea id="s-transfer" rows="4" placeholder="例如：銀行：台灣銀行&#10;帳號：123-456-7890123&#10;戶名：Bunny Bliss"></textarea>
               <p class="form-hint">下單後顯示給選擇匯款的客戶</p>
             </div>
-            <button class="btn-save" onclick="saveSettings()">儲存設定</button>
           </div>
         </div>
+        <div class="table-card" style="margin-top:16px">
+          <div class="table-card-header"><h3>首頁特色說明</h3></div>
+          <div style="padding:20px">
+            <div id="features-editor"></div>
+          </div>
+        </div>
+        <div style="padding:0 4px 24px"><button class="btn-save" onclick="saveSettings()">儲存設定</button></div>
       </div>
 
       <!-- Addons Panel -->
@@ -1470,6 +1476,14 @@ function closeModal(type) {
 
 // ── Orders ──
 const ORDER_STATUSES = ['待付款','已付款','處理中','已出貨','已完成','已取消'];
+const CVS_SHORT = { FAMI: '全家', UNIMART: '7-ELEVEN', HILIFE: '萊爾富', OKMART: 'OK' };
+
+function shipLabel(o) {
+  if (o.shipping?.method !== 'cvs') return '宅急便';
+  const brand = CVS_SHORT[o.shipping?.cvsType] || '超商';
+  const m = (o.shipping?.address || '').match(/：(.+?)（/);
+  return `${brand}：${m ? m[1] : '取貨'}`;
+}
 let orderFilter = '全部';
 
 function getOrders() { return JSON.parse(localStorage.getItem('bb_orders')||'[]'); }
@@ -1494,12 +1508,11 @@ function renderOrdersPanel() {
   tbody.innerHTML = orders.map(o => {
     const d = new Date(o.createdAt);
     const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    const shipIcon = o.shipping?.method==='711'?'🏪':'🚚';
     return `<tr>
       <td style="font-size:12px;font-weight:700;color:var(--brown)">${esc(o.id)}</td>
       <td style="font-size:12px;color:var(--brown-light)">${dateStr}</td>
       <td><div style="font-weight:600;font-size:13px">${esc(o.customer?.name||'')}</div><div style="font-size:11px;color:var(--brown-light)">${esc(o.customer?.phone||'')}</div></td>
-      <td style="font-size:12px">${shipIcon} ${o.shipping?.method==='711'?'超商取貨':'宅急便'}</td>
+      <td style="font-size:12px">${esc(shipLabel(o))}</td>
       <td style="font-weight:700;color:var(--gold)">NT$${o.total}</td>
       <td>
         <select class="order-status-select" onchange="updateOrderStatus('${o.id}',this.value)">
@@ -1530,7 +1543,7 @@ function openOrderModal(id) {
   document.getElementById('order-modal-body').innerHTML = `
     <div class="order-detail-grid">
       <div class="order-detail-block"><h4>收件人</h4><p>${esc(o.customer?.name||'')}<br>${esc(o.customer?.phone||'')}${o.customer?.email?`<br>${esc(o.customer.email)}`:''}</p></div>
-      <div class="order-detail-block"><h4>配送資訊</h4><p>${o.shipping?.method==='711'?'🏪 超商取貨':'🚚 宅急便'}<br>${esc(o.shipping?.address||'')}${o.shipping?.fee?`<br>運費：NT$${o.shipping.fee}`:''}</p></div>
+      <div class="order-detail-block"><h4>配送資訊</h4><p>${esc(shipLabel(o))}${o.shipping?.method!=='cvs'?`<br>${esc(o.shipping?.address||'')}`:''}<br>運費：NT$${o.shipping?.fee||0}</p></div>
       <div class="order-detail-block"><h4>付款方式</h4><p>${payLabel}</p></div>
       <div class="order-detail-block"><h4>下單時間</h4><p>${d.toLocaleString('zh-TW')}</p></div>
     </div>
@@ -1550,18 +1563,48 @@ function openOrderModal(id) {
 
 // ── Settings ──
 function getSettings() { return JSON.parse(localStorage.getItem('bb_settings')||'{}'); }
+const DEFAULT_FEATURES = [
+  { icon: '🧈', title: '純天然食材',   desc: '無添加防腐劑，\n選用優質奶油與麵粉' },
+  { icon: '👐', title: '職人手工製作', desc: '每批限量生產，\n保證新鮮現烤' },
+  { icon: '📦', title: '精美禮盒包裝', desc: '自用送禮兩相宜，\n附提袋免費包裝' },
+  { icon: '🚚', title: '全台配送',     desc: '確保新鮮抵達，\n滿 $800 免運費' },
+];
+
 function saveSettings() {
+  const features = DEFAULT_FEATURES.map((_, i) => ({
+    icon:  document.getElementById(`f${i}-icon`).value.trim(),
+    title: document.getElementById(`f${i}-title`).value.trim(),
+    desc:  document.getElementById(`f${i}-desc`).value,
+  }));
   const s = {
     linePayInfo: document.getElementById('s-linepay').value.trim(),
-    transferInfo: document.getElementById('s-transfer').value.trim()
+    transferInfo: document.getElementById('s-transfer').value.trim(),
+    features,
   };
   localStorage.setItem('bb_settings', JSON.stringify(s));
   showToast('設定已儲存 ✓');
 }
+
 function renderSettingsPanel() {
   const s = getSettings();
   document.getElementById('s-linepay').value = s.linePayInfo || '';
   document.getElementById('s-transfer').value = s.transferInfo || '';
+  const features = s.features || DEFAULT_FEATURES;
+  document.getElementById('features-editor').innerHTML = features.map((f, i) => `
+    <div style="display:grid;grid-template-columns:72px 1fr 1.6fr;gap:10px;margin-bottom:16px;align-items:start">
+      <div class="form-group" style="margin:0">
+        <label>圖示</label>
+        <input id="f${i}-icon" value="${esc(f.icon)}" maxlength="4" style="text-align:center;font-size:20px;padding:6px">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>標題</label>
+        <input id="f${i}-title" value="${esc(f.title)}">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>說明文字</label>
+        <textarea id="f${i}-desc" rows="2">${esc(f.desc)}</textarea>
+      </div>
+    </div>`).join('');
 }
 
 // ── Addons ──

@@ -504,29 +504,27 @@
 
 <!-- Features strip -->
 <div class="features-strip">
-  <div class="features-inner">
-    <div class="feature-item">
-      <div class="feature-icon">🧈</div>
-      <div class="feature-title">純天然食材</div>
-      <div class="feature-desc">無添加防腐劑，<br>選用優質奶油與麵粉</div>
-    </div>
-    <div class="feature-item">
-      <div class="feature-icon">👐</div>
-      <div class="feature-title">職人手工製作</div>
-      <div class="feature-desc">每批限量生產，<br>保證新鮮現烤</div>
-    </div>
-    <div class="feature-item">
-      <div class="feature-icon">📦</div>
-      <div class="feature-title">精美禮盒包裝</div>
-      <div class="feature-desc">自用送禮兩相宜，<br>附提袋免費包裝</div>
-    </div>
-    <div class="feature-item">
-      <div class="feature-icon">🚚</div>
-      <div class="feature-title">全台配送</div>
-      <div class="feature-desc">確保新鮮抵達，<br>滿 $800 免運費</div>
-    </div>
-  </div>
+  <div class="features-inner" id="features-inner"></div>
 </div>
+<script>
+(function() {
+  const defaults = [
+    { icon: '🧈', title: '純天然食材',   desc: '無添加防腐劑，\n選用優質奶油與麵粉' },
+    { icon: '👐', title: '職人手工製作', desc: '每批限量生產，\n保證新鮮現烤' },
+    { icon: '📦', title: '精美禮盒包裝', desc: '自用送禮兩相宜，\n附提袋免費包裝' },
+    { icon: '🚚', title: '全台配送',     desc: '確保新鮮抵達，\n滿 $800 免運費' },
+  ];
+  const s = JSON.parse(localStorage.getItem('bb_settings') || '{}');
+  const features = s.features || defaults;
+  document.getElementById('features-inner').innerHTML = features.map(f =>
+    `<div class="feature-item">
+      <div class="feature-icon">${f.icon}</div>
+      <div class="feature-title">${f.title}</div>
+      <div class="feature-desc">${f.desc.replace(/\n/g, '<br>')}</div>
+    </div>`
+  ).join('');
+})();
+</script>
 
 <!-- Products -->
 <section class="section" id="products">
