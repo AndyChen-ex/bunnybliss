@@ -518,7 +518,7 @@ function renderProducts() {
 
   grid.innerHTML = products.map(p => {
     const cat = cats.find(c=>c.id===p.categoryId);
-    return `<a class="product-card" href="product-detail.html?id=${p.id}">
+    return `<div class="product-card" onclick="location.href='product-detail.html?id=${p.id}'">
       <div class="product-img-wrap">
         <img src="${esc((p.images&&p.images[0])||p.image||'')}" alt="${esc(p.name)}" onerror="this.style.display='none'">
         ${p.badge?`<span class="product-badge" style="background:${esc(p.badgeColor||'#f2b8c6')};color:#3d2b1f">${esc(p.badge)}</span>`:''}
@@ -529,10 +529,10 @@ function renderProducts() {
         <div class="product-desc">${esc(p.desc)}</div>
         <div class="product-footer">
           <div class="product-price">${(()=>{const t=p.priceTiers&&p.priceTiers.length;const minP=t?Math.min(...p.priceTiers.map(x=>x.price)):p.price;return `NT$${minP}${t?'<small> 起 / 盒</small>':'<small> / 盒</small>'}`;})()} </div>
-          <button class="btn-add-cart" onclick="event.preventDefault();event.stopPropagation();addToCart({name:'${esc(p.name)}',price:${p.price},image:'${esc((p.images&&p.images[0])||p.image||'')}'})">+</button>
+          <button class="btn-add-cart" onclick="event.stopPropagation();addToCart({name:'${esc(p.name)}',price:${p.price},image:'${esc((p.images&&p.images[0])||p.image||'')}'})" ontouchend="event.stopPropagation()">+</button>
         </div>
       </div>
-    </a>`;
+    </div>`;
   }).join('');
 }
 
