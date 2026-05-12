@@ -781,7 +781,7 @@ function renderProducts() {
       </a>
       <div class="product-footer" style="padding:0 16px 20px">
         <div class="product-price">${(()=>{const t=p.priceTiers&&p.priceTiers.length;const minP=t?Math.min(...p.priceTiers.map(x=>x.price)):p.price;return `NT$${minP}${t?' <span>起 / 盒</span>':' <span>/ 盒</span>'}`;})()} </div>
-        <button class="btn-add-cart" onclick="addToCart(${escAttr(JSON.stringify({name:p.name,price:p.price,image:(p.images&&p.images[0])||p.image||''}))})">+</button>
+        <button class="btn-add-cart" data-name="${escHtml(p.name)}" data-price="${p.price}" data-image="${escHtml((p.images&&p.images[0])||p.image||'')}" onclick="quickAdd(this)">+</button>
       </div>
     </div>
   `).join('');
@@ -792,6 +792,10 @@ function escHtml(s) {
 }
 function escAttr(s) {
   return "'" + String(s || '').replace(/'/g, "\\'") + "'";
+}
+
+function quickAdd(btn) {
+  addToCart({ name: btn.dataset.name, price: Number(btn.dataset.price), image: btn.dataset.image });
 }
 
 // ── Cart ──
