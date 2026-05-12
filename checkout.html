@@ -72,6 +72,40 @@
 
     .field-err { font-size: 12px; color: #e05555; margin-top: 6px; display: none; }
     .field-err.show { display: block; }
+    .ferr { font-size: 12px; color: #e05555; margin-top: 5px; }
+    .input-err { border-color: #e05555 !important; background: #fff8f8 !important; }
+
+    /* Store picker button */
+    .btn-pick-store { display: inline-block; margin-top: 4px; padding: 9px 18px; border: 1.5px solid var(--gold); border-radius: 50px; background: var(--white); color: var(--gold); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .btn-pick-store:hover { background: var(--gold); color: var(--white); }
+    .store-selected-card { padding: 12px 14px; background: #fff8f0; border: 1.5px solid var(--gold); border-radius: 10px; margin-bottom: 10px; }
+    .store-selected-label { font-size: 11px; font-weight: 700; color: var(--gold); margin-bottom: 4px; letter-spacing: 0.3px; }
+    .store-selected-name { font-size: 14px; font-weight: 600; color: var(--brown); }
+    .store-selected-addr { font-size: 12px; color: var(--brown-light); margin-top: 2px; }
+
+    /* Store picker modal */
+    .sp-overlay { position: fixed; inset: 0; background: rgba(61,43,31,0.55); z-index: 300; display: none; align-items: flex-end; justify-content: center; }
+    .sp-overlay.show { display: flex; }
+    @media (min-width: 540px) { .sp-overlay { align-items: center; } }
+    .sp-box { background: var(--white); border-radius: 20px 20px 0 0; width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
+    @media (min-width: 540px) { .sp-box { border-radius: 20px; max-height: 82vh; } }
+    .sp-head { padding: 18px 20px 12px; border-bottom: 1px solid var(--cream-dark); flex-shrink: 0; }
+    .sp-head-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .sp-head-row h3 { font-family: 'Noto Serif TC', serif; font-size: 16px; font-weight: 600; }
+    .btn-sp-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--brown-light); padding: 4px; line-height: 1; }
+    .sp-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .sp-tab { padding: 6px 14px; border: 1.5px solid var(--cream-dark); border-radius: 50px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: var(--white); color: var(--brown); }
+    .sp-tab.active { border-color: var(--gold); background: var(--gold); color: var(--white); }
+    .sp-filters { display: flex; gap: 8px; }
+    .sp-filters select, .sp-filters input { flex: 1; padding: 8px 10px; border: 1.5px solid var(--cream-dark); border-radius: 8px; font-family: inherit; font-size: 13px; color: var(--brown); background: var(--white); outline: none; transition: border-color 0.2s; }
+    .sp-filters select:focus, .sp-filters input:focus { border-color: var(--gold); }
+    .sp-body { flex: 1; overflow-y: auto; padding: 12px 16px; }
+    .sp-status { text-align: center; padding: 48px 20px; color: var(--brown-light); font-size: 14px; }
+    .sp-count { font-size: 12px; color: var(--brown-light); padding: 0 2px 8px; }
+    .sp-store { padding: 11px 14px; border: 1.5px solid var(--cream-dark); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+    .sp-store:hover { border-color: var(--gold); background: #fff8f0; }
+    .sp-store-name { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 3px; }
+    .sp-store-addr { font-size: 12px; color: var(--brown-light); }
 
     /* Confirmation */
     .overlay { position: fixed; inset: 0; background: rgba(61,43,31,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
@@ -112,6 +146,33 @@
 
 <div id="main"></div>
 
+<!-- Store picker modal -->
+<div class="sp-overlay" id="sp-overlay" onclick="onSpOverlayClick(event)">
+  <div class="sp-box">
+    <div class="sp-head">
+      <div class="sp-head-row">
+        <h3>選擇取貨門市</h3>
+        <button class="btn-sp-close" onclick="closeStorePicker()">✕</button>
+      </div>
+      <div class="sp-tabs" id="sp-tabs"></div>
+      <div class="sp-filters">
+        <select id="sp-city" onchange="renderStoreList()">
+          <option value="">全部縣市</option>
+          <option>台北市</option><option>新北市</option><option>桃園市</option>
+          <option>台中市</option><option>台南市</option><option>高雄市</option>
+          <option>基隆市</option><option>新竹市</option><option>嘉義市</option>
+          <option>新竹縣</option><option>苗栗縣</option><option>彰化縣</option>
+          <option>南投縣</option><option>雲林縣</option><option>嘉義縣</option>
+          <option>屏東縣</option><option>宜蘭縣</option><option>花蓮縣</option>
+          <option>台東縣</option><option>澎湖縣</option><option>金門縣</option><option>連江縣</option>
+        </select>
+        <input id="sp-search" placeholder="搜尋門市名稱…" oninput="renderStoreList()">
+      </div>
+    </div>
+    <div class="sp-body" id="sp-body"><div class="sp-status">請先選擇超商品牌</div></div>
+  </div>
+</div>
+
 <!-- Confirmation overlay -->
 <div class="overlay" id="confirm-overlay">
   <div class="confirm-box">
@@ -126,6 +187,114 @@
 <script>
 const SHIPPING_FEE = 60;
 let cart = JSON.parse(localStorage.getItem('bb_cart') || '[]');
+
+// ── CVS Store Picker ──────────────────────────────────────────────
+const CVS_LIST = [
+  { key: 'FAMI',    name: '全家',      label: '全家 FamilyMart' },
+  { key: 'UNIMART', name: '7-ELEVEN',  label: '7-ELEVEN' },
+  { key: 'HILIFE',  name: '萊爾富',   label: '萊爾富 Hi-Life' },
+  { key: 'OKMART',  name: 'OK',        label: 'OK mart' },
+];
+
+let selectedStore = null;  // { cvsType, storeId, storeName, storeAddr }
+let pickerCvsType = 'FAMI';
+let pickerStores = [];     // StoreInfo[] for current tab
+let storeCache = {};       // cvsType → StoreInfo[]
+let pickerLoading = false;
+
+function openStorePicker() {
+  document.getElementById('sp-overlay').classList.add('show');
+  renderPickerTabs();
+  loadStores(pickerCvsType);
+}
+
+function closeStorePicker() {
+  document.getElementById('sp-overlay').classList.remove('show');
+}
+
+function onSpOverlayClick(e) {
+  if (e.target === document.getElementById('sp-overlay')) closeStorePicker();
+}
+
+function renderPickerTabs() {
+  document.getElementById('sp-tabs').innerHTML = CVS_LIST.map(c =>
+    `<button class="sp-tab${c.key === pickerCvsType ? ' active' : ''}" onclick="selectPickerTab('${c.key}')">${c.name}</button>`
+  ).join('');
+}
+
+async function selectPickerTab(cvsType) {
+  pickerCvsType = cvsType;
+  renderPickerTabs();
+  document.getElementById('sp-search').value = '';
+  await loadStores(cvsType);
+}
+
+async function loadStores(cvsType) {
+  if (storeCache[cvsType]) {
+    pickerStores = storeCache[cvsType];
+    renderStoreList();
+    return;
+  }
+  pickerLoading = true;
+  document.getElementById('sp-body').innerHTML = '<div class="sp-status">載入中…</div>';
+  try {
+    const res = await fetch(`/api/cvs-stores?type=${cvsType}`);
+    const data = await res.json();
+    if (data.RtnCode !== 1) throw new Error(data.RtnMsg || '綠界回應錯誤');
+    const entry = (data.StoreList || []).find(s => s.CvsType === cvsType);
+    storeCache[cvsType] = entry ? entry.StoreInfo : [];
+    pickerStores = storeCache[cvsType];
+  } catch (e) {
+    document.getElementById('sp-body').innerHTML = `<div class="sp-status">⚠️ 無法取得門市資料<br><small>${e.message}</small></div>`;
+    pickerLoading = false;
+    return;
+  }
+  pickerLoading = false;
+  renderStoreList();
+}
+
+function normalizeCity(str) {
+  return str.replace(/臺/g, '台');
+}
+
+function renderStoreList() {
+  const city = document.getElementById('sp-city').value;
+  const kw = document.getElementById('sp-search').value.trim();
+
+  let list = pickerStores;
+  if (city) list = list.filter(s => normalizeCity(s.StoreAddr).includes(normalizeCity(city)));
+  if (kw) list = list.filter(s => s.StoreName.includes(kw) || s.StoreAddr.includes(kw));
+
+  const MAX = 80;
+  const shown = list.slice(0, MAX);
+  const total = list.length;
+
+  if (!shown.length) {
+    document.getElementById('sp-body').innerHTML = '<div class="sp-status">沒有符合的門市</div>';
+    return;
+  }
+
+  const cvsLabel = CVS_LIST.find(c => c.key === pickerCvsType)?.label || '';
+  document.getElementById('sp-body').innerHTML =
+    `<div class="sp-count">共 ${total} 間${total > MAX ? `，顯示前 ${MAX} 筆，請縮小篩選範圍` : ''}</div>` +
+    shown.map(s => `
+      <div class="sp-store" onclick="selectStore('${esc(s.StoreId)}','${esc(s.StoreName)}','${esc(s.StoreAddr)}','${cvsLabel}')">
+        <div class="sp-store-name">${esc(s.StoreName)}</div>
+        <div class="sp-store-addr">${esc(s.StoreAddr)}</div>
+      </div>`).join('');
+}
+
+function selectStore(storeId, storeName, storeAddr, cvsLabel) {
+  selectedStore = { cvsType: pickerCvsType, storeId, storeName, storeAddr, cvsLabel };
+  const card = document.getElementById('store-selected-card');
+  document.getElementById('store-selected-label').textContent = cvsLabel;
+  document.getElementById('store-selected-name').textContent = storeName;
+  document.getElementById('store-selected-addr').textContent = storeAddr;
+  card.style.display = 'block';
+  document.querySelector('.btn-pick-store').textContent = '重新選擇門市';
+  closeStorePicker();
+}
+// ─────────────────────────────────────────────────────────────────
 
 function getSettings() { return JSON.parse(localStorage.getItem('bb_settings') || '{}'); }
 function getOrders() { return JSON.parse(localStorage.getItem('bb_orders') || '[]'); }
@@ -175,7 +344,7 @@ function render() {
             <div class="fg"><label>姓名 *</label><input id="c-name" placeholder="收件人姓名" maxlength="20"></div>
             <div class="fg"><label>電話 *</label><input id="c-phone" type="tel" placeholder="0912345678" maxlength="20"></div>
           </div>
-          <div class="fg"><label>電子郵件</label><input id="c-email" type="email" placeholder="選填，用於訂單通知"></div>
+          <div class="fg"><label>電子郵件 *</label><input id="c-email" type="email" placeholder="example@email.com"></div>
         </div>
 
         <!-- Step 2 -->
@@ -183,19 +352,21 @@ function render() {
           <div class="card-title"><span class="step-num">2</span>配送方式</div>
           <div class="option-list">
             <label class="opt">
-              <input type="radio" name="shipping" value="711" onchange="onShippingChange()">
+              <input type="radio" name="shipping" value="cvs" onchange="onShippingChange()">
               <span class="opt-icon">🏪</span>
               <div class="opt-body">
-                <div class="opt-name">7-11 超商取貨</div>
-                <div class="opt-sub">取件時間：出貨後 2–3 個工作天</div>
+                <div class="opt-name">超商取貨</div>
+                <div class="opt-sub">全家・7-ELEVEN・萊爾富・OK｜出貨後 2–3 個工作天</div>
               </div>
               <span class="opt-fee">NT$60</span>
             </label>
-            <div class="extra" id="extra-711">
-              <div class="fg" style="margin-bottom:0">
-                <label>門市名稱或編號 *</label>
-                <input id="store-name" placeholder="例如：台北南京東路門市">
+            <div class="extra" id="extra-cvs">
+              <div id="store-selected-card" class="store-selected-card" style="display:none">
+                <div class="store-selected-label" id="store-selected-label"></div>
+                <div class="store-selected-name" id="store-selected-name"></div>
+                <div class="store-selected-addr" id="store-selected-addr"></div>
               </div>
+              <button type="button" class="btn-pick-store" onclick="openStorePicker()">選擇取貨門市</button>
             </div>
             <label class="opt">
               <input type="radio" name="shipping" value="home" onchange="onShippingChange()">
@@ -258,9 +429,32 @@ function render() {
     </div>`;
 }
 
+function clearErrors() {
+  document.querySelectorAll('.ferr').forEach(e => e.remove());
+  document.querySelectorAll('.input-err').forEach(e => e.classList.remove('input-err'));
+}
+
+function markErr(el, msg) {
+  clearErrors();
+  el.classList.add('input-err');
+  const d = document.createElement('div');
+  d.className = 'ferr'; d.textContent = msg;
+  el.insertAdjacentElement('afterend', d);
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (el.tagName === 'INPUT' || el.tagName === 'SELECT') el.focus();
+}
+
+function markAfter(el, msg) {
+  clearErrors();
+  const d = document.createElement('div');
+  d.className = 'ferr'; d.textContent = msg;
+  el.insertAdjacentElement('afterend', d);
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function onShippingChange() {
   const val = document.querySelector('input[name=shipping]:checked')?.value;
-  document.getElementById('extra-711').classList.toggle('show', val === '711');
+  document.getElementById('extra-cvs').classList.toggle('show', val === 'cvs');
   document.getElementById('extra-home').classList.toggle('show', val === 'home');
 }
 
@@ -276,30 +470,30 @@ function submitOrder() {
   const email = document.getElementById('c-email').value.trim();
   const shipping = document.querySelector('input[name=shipping]:checked')?.value;
   const payment = document.querySelector('input[name=payment]:checked')?.value;
-  const errEl = document.getElementById('form-err');
-
-  let err = '';
-  if (!name || !phone) err = '請填寫收件人姓名和電話';
-  else if (!shipping) err = '請選擇配送方式';
-  else if (shipping === '711' && !document.getElementById('store-name').value.trim()) err = '請填寫 7-11 門市名稱';
-  else if (shipping === 'home') {
-    const city = document.getElementById('home-city').value;
-    const dist = document.getElementById('home-district').value.trim();
-    const addr = document.getElementById('home-addr').value.trim();
-    if (!city || !dist || !addr) err = '請填寫完整收件地址';
+  if (!name) return markErr(document.getElementById('c-name'), '請填寫姓名');
+  if (!phone) return markErr(document.getElementById('c-phone'), '請填寫電話');
+  if (phone.replace(/\D/g, '').length < 10) return markErr(document.getElementById('c-phone'), '電話號碼至少需要 10 碼');
+  if (!email) return markErr(document.getElementById('c-email'), '請填寫電子郵件');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return markErr(document.getElementById('c-email'), '電子郵件格式不正確');
+  if (!shipping) return markAfter(document.querySelector('input[name=shipping]').closest('.option-list'), '請選擇配送方式');
+  if (shipping === 'cvs' && !selectedStore) return markAfter(document.querySelector('.btn-pick-store'), '請選擇超商取貨門市');
+  if (shipping === 'home') {
+    const city = document.getElementById('home-city');
+    const dist = document.getElementById('home-district');
+    const addr = document.getElementById('home-addr');
+    if (!city.value) return markErr(city, '請選擇縣市');
+    if (!dist.value.trim()) return markErr(dist, '請填寫鄉鎮市區');
+    if (!addr.value.trim()) return markErr(addr, '請填寫詳細地址');
   }
-  else if (!payment) err = '請選擇付款方式';
-
-  if (err) {
-    errEl.textContent = err; errEl.classList.add('show');
-    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-  errEl.classList.remove('show');
+  if (!payment) return markAfter(document.querySelector('input[name=payment]').closest('.option-list'), '請選擇付款方式');
+  clearErrors();
 
   let address = '';
-  if (shipping === '711') address = '7-11：' + document.getElementById('store-name').value.trim();
-  else address = document.getElementById('home-city').value + document.getElementById('home-district').value.trim() + document.getElementById('home-addr').value.trim();
+  if (shipping === 'cvs') {
+    address = `${selectedStore.cvsLabel}：${selectedStore.storeName}（${selectedStore.storeAddr}）`;
+  } else {
+    address = document.getElementById('home-city').value + document.getElementById('home-district').value.trim() + document.getElementById('home-addr').value.trim();
+  }
 
   const orderId = generateOrderId();
   const order = {
@@ -307,7 +501,12 @@ function submitOrder() {
     createdAt: new Date().toISOString(),
     status: '待付款',
     customer: { name, phone, email },
-    shipping: { method: shipping, address, fee: SHIPPING_FEE },
+    shipping: {
+      method: shipping,
+      address,
+      fee: SHIPPING_FEE,
+      ...(shipping === 'cvs' && { cvsType: selectedStore.cvsType, storeId: selectedStore.storeId }),
+    },
     payment: { method: payment },
     items: JSON.parse(JSON.stringify(cart)),
     subtotal: subtotal(),
