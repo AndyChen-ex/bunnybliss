@@ -768,20 +768,22 @@ function renderProducts() {
     return;
   }
   grid.innerHTML = products.map(p => `
-    <a class="product-card" href="product-detail.html?id=${p.id}" style="text-decoration:none;color:inherit;display:block">
-      <div class="product-img-wrap">
-        <img src="${escHtml((p.images&&p.images[0])||p.image||'')}" alt="${escHtml(p.name)}" onerror="this.style.display='none'">
-        ${p.badge ? `<span class="product-badge" style="background:${escHtml(p.badgeColor || '#f2b8c6')};color:#3d2b1f">${escHtml(p.badge)}</span>` : ''}
-      </div>
-      <div class="product-info">
-        <div class="product-name">${escHtml(p.name)}</div>
-        <div class="product-desc">${escHtml(p.desc)}</div>
-        <div class="product-footer">
-          <div class="product-price">${(()=>{const t=p.priceTiers&&p.priceTiers.length;const minP=t?Math.min(...p.priceTiers.map(x=>x.price)):p.price;return `NT$${minP}${t?' <span>起 / 盒</span>':' <span>/ 盒</span>'}`;})()} </div>
-          <button class="btn-add-cart" onclick="event.preventDefault();event.stopPropagation();addToCart(${escAttr(JSON.stringify({name:p.name,price:p.price,image:(p.images&&p.images[0])||p.image||''}))})">+</button>
+    <div class="product-card">
+      <a href="product-detail.html?id=${p.id}" style="text-decoration:none;color:inherit;display:block">
+        <div class="product-img-wrap">
+          <img src="${escHtml((p.images&&p.images[0])||p.image||'')}" alt="${escHtml(p.name)}" onerror="this.style.display='none'">
+          ${p.badge ? `<span class="product-badge" style="background:${escHtml(p.badgeColor || '#f2b8c6')};color:#3d2b1f">${escHtml(p.badge)}</span>` : ''}
         </div>
+        <div class="product-info" style="padding-bottom:0">
+          <div class="product-name">${escHtml(p.name)}</div>
+          <div class="product-desc">${escHtml(p.desc)}</div>
+        </div>
+      </a>
+      <div class="product-footer" style="padding:0 16px 20px">
+        <div class="product-price">${(()=>{const t=p.priceTiers&&p.priceTiers.length;const minP=t?Math.min(...p.priceTiers.map(x=>x.price)):p.price;return `NT$${minP}${t?' <span>起 / 盒</span>':' <span>/ 盒</span>'}`;})()} </div>
+        <button class="btn-add-cart" onclick="addToCart(${escAttr(JSON.stringify({name:p.name,price:p.price,image:(p.images&&p.images[0])||p.image||''}))})">+</button>
       </div>
-    </a>
+    </div>
   `).join('');
 }
 
