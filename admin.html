@@ -253,6 +253,9 @@
     .btn-rm-img:hover { color: #e05555; }
     .btn-add-img { background: none; border: 1.5px dashed var(--gold-light); color: var(--gold); padding: 8px 16px; border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px; transition: all 0.2s; }
     .btn-add-img:hover { background: var(--cream-dark); }
+    .btn-upload-img { background: var(--gold); color: var(--white); border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0; transition: background 0.2s; white-space: nowrap; }
+    .btn-upload-img:hover { background: var(--gold-dark); }
+    .btn-upload-img:disabled { opacity: 0.5; cursor: default; }
     .tier-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
     .tier-row input { width: 80px; flex-shrink: 0; }
     .tier-sep { font-size: 13px; color: var(--brown-light); flex-shrink: 0; white-space: nowrap; }
@@ -634,6 +637,17 @@
           </div>
         </div>
         <div style="padding:0 4px 24px"><button class="btn-save" onclick="saveSettings()">儲存設定</button></div>
+        <div class="table-card" style="margin-top:16px">
+          <div class="table-card-header"><h3>資料備份</h3></div>
+          <div style="padding:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+            <button class="btn-save" onclick="exportData()">匯出 JSON</button>
+            <label class="btn-save" style="cursor:pointer;margin:0">
+              匯入 JSON
+              <input type="file" accept=".json" style="display:none" onchange="importData(this)">
+            </label>
+            <span id="import-status" style="font-size:13px;color:#666"></span>
+          </div>
+        </div>
       </div>
 
       <!-- Addons Panel -->
@@ -696,12 +710,18 @@
       </div>
       <div class="form-group">
         <label>插圖路徑或網址</label>
-        <input type="text" id="b-illus" placeholder="e.g. roll-original.jpg 或 https://..." oninput="previewImg('b-illus','b-illus-preview')">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="b-illus" placeholder="e.g. roll-original.jpg 或 https://..." oninput="previewImg('b-illus','b-illus-preview')" style="flex:1">
+          <button type="button" class="btn-upload-img" onclick="triggerUpload('b-illus','b-illus-preview')">上傳圖片</button>
+        </div>
         <div class="img-preview-wrap"><img id="b-illus-preview" class="img-preview" src="" alt="預覽"></div>
       </div>
       <div class="form-group">
         <label>背景圖片網址（選填）</label>
-        <input type="text" id="b-bg" placeholder="https://..." oninput="previewImg('b-bg','b-bg-preview')">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="b-bg" placeholder="https://..." oninput="previewImg('b-bg','b-bg-preview')" style="flex:1">
+          <button type="button" class="btn-upload-img" onclick="triggerUpload('b-bg','b-bg-preview')">上傳圖片</button>
+        </div>
         <div class="img-preview-wrap"><img id="b-bg-preview" class="img-preview" src="" alt="預覽"></div>
       </div>
       <div class="form-group">
@@ -1444,6 +1464,62 @@ function doDelete() {
   showToast('已刪除');
 }
 
+// ── Cloudinary 上傳 ──
+function triggerUpload(inputId, previewId) {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.onchange = async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const btn = document.querySelector(`[onclick="triggerUpload('${inputId}','${previewId}')"]`);
+    if (btn) { btn.disabled = true; btn.textContent = '上傳中…'; }
+    try {
+      const url = await uploadToCloudinary(file);
+      const input = document.getElementById(inputId);
+      input.value = url;
+      previewImg(inputId, previewId);
+      showToast('圖片上傳成功！');
+    } catch (e) {
+      showToast('上傳失敗：' + e.message);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '上傳圖片'; }
+    }
+  };
+  fileInput.click();
+}
+function triggerUploadRow(btn) {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.onchange = async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const url = await uploadToCloudinary(file);
+      const row = btn.closest('.img-row');
+      const input = row.querySelector('.img-row-input');
+      input.value = url;
+      updateImgRowPreview(input);
+      showToast('圖片上傳成功！');
+    } catch (e) {
+      showToast('上傳失敗：' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = '上傳';
+    }
+  };
+  fileInput.click();
+}
+async function uploadToCloudinary(file) {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch('/api/upload', { method: 'POST', body: form });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '上傳失敗');
+  return data.url;
+}
+
 // ── Multi-image helpers ──
 function addProductImageRow(value) {
   const list = document.getElementById('p-images-list');
@@ -1451,7 +1527,7 @@ function addProductImageRow(value) {
   const div = document.createElement('div');
   div.className = 'img-row';
   const v = (value||'').replace(/"/g,'&quot;');
-  div.innerHTML = `<input type="text" class="img-row-input" value="${v}" placeholder="${i===0?'主圖路徑或網址':'圖片路徑或網址'}" oninput="updateImgRowPreview(this)"><div class="img-row-thumb">${value?`<img src="${v}" onerror="this.style.display='none'">`:''}</div><button type="button" class="btn-rm-img" onclick="this.closest('.img-row').remove()" title="移除">✕</button>`;
+  div.innerHTML = `<input type="text" class="img-row-input" value="${v}" placeholder="${i===0?'主圖路徑或網址':'圖片路徑或網址'}" oninput="updateImgRowPreview(this)"><div class="img-row-thumb">${value?`<img src="${v}" onerror="this.style.display='none'">`:''}</div><button type="button" class="btn-upload-img" onclick="triggerUploadRow(this)">上傳</button><button type="button" class="btn-rm-img" onclick="this.closest('.img-row').remove()" title="移除">✕</button>`;
   list.appendChild(div);
 }
 function addTierRow(tier) {
@@ -1569,6 +1645,47 @@ const DEFAULT_FEATURES = [
   { icon: '📦', title: '精美禮盒包裝', desc: '自用送禮兩相宜，\n附提袋免費包裝' },
   { icon: '🚚', title: '全台配送',     desc: '確保新鮮抵達，\n滿 $800 免運費' },
 ];
+
+function exportData() {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    bb_products: getProducts(),
+    bb_banners: getBanners(),
+    bb_categories: getCategories(),
+    bb_addons: getAddons(),
+    bb_settings: getSettings(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bunnybliss-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.bb_products) localStorage.setItem('bb_products', JSON.stringify(data.bb_products));
+      if (data.bb_banners)   localStorage.setItem('bb_banners',  JSON.stringify(data.bb_banners));
+      if (data.bb_categories) localStorage.setItem('bb_categories', JSON.stringify(data.bb_categories));
+      if (data.bb_addons)    localStorage.setItem('bb_addons',   JSON.stringify(data.bb_addons));
+      if (data.bb_settings)  localStorage.setItem('bb_settings', JSON.stringify(data.bb_settings));
+      document.getElementById('import-status').textContent = '匯入成功，請重新整理頁面';
+      showToast('資料匯入成功！請重新整理頁面 ✓');
+    } catch {
+      document.getElementById('import-status').textContent = '格式錯誤，請選擇正確的備份檔案';
+      showToast('匯入失敗：JSON 格式錯誤');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
 
 function saveSettings() {
   const features = DEFAULT_FEATURES.map((_, i) => ({

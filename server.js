@@ -2,6 +2,21 @@ require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
+const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+console.log('[Cloudinary] config loaded:', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  has_key: !!process.env.CLOUDINARY_API_KEY,
+  has_secret: !!process.env.CLOUDINARY_API_SECRET,
+});
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -76,6 +91,19 @@ app.get('/api/cvs-stores', async (req, res) => {
   } catch (err) {
     console.error(`[ECPay] 取得門市清單失敗 (${cvsType}):`, err.message);
     res.status(502).json({ error: '無法取得門市資料，請稍後再試' });
+  }
+});
+
+// POST /api/upload — 上傳圖片至 Cloudinary，回傳 { url }
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '未收到圖片' });
+  try {
+    const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    const result = await cloudinary.uploader.upload(dataUri, { folder: 'bunnybliss' });
+    res.json({ url: result.secure_url });
+  } catch (err) {
+    console.error('[Cloudinary] 上傳失敗:', err.message, err.http_code, JSON.stringify(err));
+    res.status(500).json({ error: err.message });
   }
 });
 

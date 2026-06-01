@@ -57,9 +57,10 @@
     }
     .img-slides {
       position: absolute; inset: 0;
+      width: 100%;
       display: flex; transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
     }
-    .img-slide { min-width: 100%; height: 100%; flex-shrink: 0; position: relative; }
+    .img-slide { flex: 0 0 100%; max-width: 100%; height: 100%; position: relative; overflow: hidden; }
     .img-slide img { width: 100%; height: 100%; object-fit: cover; }
     .image-badge {
       position: absolute; top: 16px; left: 16px;
@@ -260,7 +261,9 @@
       .detail-layout { flex-direction: column; gap: 28px; padding: 20px 16px 60px; }
       .detail-image-col { width: 100%; max-width: 100%; }
       .img-carousel { padding-top: 0; height: 260px; }
-      .img-slide img { object-fit: contain; }
+      .img-slides { position: relative; top: auto; right: auto; bottom: auto; left: auto; height: 260px; }
+      .img-slide { position: relative; height: 260px; overflow: hidden; }
+      .img-slide img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
       .detail-info-col { position: static; }
       .cart-drawer { width: 100%; }
     }
@@ -318,7 +321,7 @@
 
 <header id="site-header">
   <div class="header-inner">
-    <a class="logo" href="index.html"><img src="logo.jpg" alt="Bunny Bliss"></a>
+    <a class="logo" href="index.html"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
     <nav>
       <a href="index.html">首頁</a>
       <a href="products.html" class="active">商品</a>
