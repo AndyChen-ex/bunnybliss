@@ -132,17 +132,58 @@
       .summary-col { width: 100%; position: static; order: -1; }
       .fg-row { grid-template-columns: 1fr; }
     }
+
+    /* Auth gate */
+    #auth-gate { position: fixed; inset: 0; background: var(--cream); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 24px; overflow-y: auto; }
+    #auth-gate.show { display: flex; }
+    .gate-box { background: var(--white); border-radius: 24px; padding: 32px 28px; width: 100%; max-width: 380px; box-shadow: 0 8px 40px rgba(61,43,31,0.12); }
+    .gate-logo { text-align: center; margin-bottom: 6px; font-family: 'Noto Serif TC', serif; font-size: 22px; font-weight: 600; color: var(--gold); }
+    .gate-hint { text-align: center; font-size: 13px; color: var(--brown-light); margin-bottom: 22px; }
+    .gate-tabs { display: flex; border-bottom: 2px solid var(--cream-dark); margin-bottom: 20px; }
+    .gate-tab { flex: 1; background: none; border: none; padding: 10px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--brown-light); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .gate-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .gate-panel { display: none; }
+    .gate-panel.active { display: block; }
+    .gate-fg { margin-bottom: 14px; }
+    .gate-fg label { display: block; font-size: 12px; font-weight: 700; color: var(--brown-mid); margin-bottom: 5px; }
+    .gate-fg input { width: 100%; padding: 10px 13px; border: 1.5px solid var(--cream-dark); border-radius: 8px; font-family: inherit; font-size: 14px; color: var(--brown); background: var(--white); outline: none; transition: border-color 0.2s; }
+    .gate-fg input:focus { border-color: var(--gold); }
+    .gate-btn { width: 100%; background: var(--gold); color: var(--white); border: none; padding: 13px; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 4px; }
+    .gate-btn:hover { background: var(--gold-dark); }
   </style>
 </head>
 <body>
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="index.html"><img src="logo.png" alt="Bunny Bliss"></a>
+    <a class="logo" href="index.html"><img src="logo.jpg" alt="Bunny Bliss"></a>
     <div class="page-title">確認訂單</div>
     <button class="btn-back" onclick="history.back()">← 返回</button>
   </div>
 </header>
+
+<!-- Auth Gate -->
+<div id="auth-gate">
+  <div class="gate-box">
+    <div class="gate-logo">🐰 Bunny Bliss</div>
+    <div class="gate-hint">請先登入或註冊會員，才能繼續結帳</div>
+    <div class="gate-tabs">
+      <button class="gate-tab active" id="gate-tab-login" onclick="gateSwitchTab('login')">會員登入</button>
+      <button class="gate-tab" id="gate-tab-register" onclick="gateSwitchTab('register')">新會員註冊</button>
+    </div>
+    <div class="gate-panel active" id="gate-panel-login">
+      <div class="gate-fg"><label>電子信箱</label><input id="gate-login-email" type="email" placeholder="請輸入電子信箱"></div>
+      <div class="gate-fg"><label>密碼</label><input id="gate-login-pass" type="password" placeholder="請輸入密碼"></div>
+      <button class="gate-btn" onclick="gateLogin()">登入</button>
+    </div>
+    <div class="gate-panel" id="gate-panel-register">
+      <div class="gate-fg"><label>姓名</label><input id="gate-reg-name" type="text" placeholder="請輸入真實姓名"></div>
+      <div class="gate-fg"><label>電子信箱</label><input id="gate-reg-email" type="email" placeholder="請輸入電子信箱"></div>
+      <div class="gate-fg"><label>密碼</label><input id="gate-reg-pass" type="password" placeholder="至少 8 個字元"></div>
+      <button class="gate-btn" onclick="gateRegister()">立即註冊</button>
+    </div>
+  </div>
+</div>
 
 <div id="main"></div>
 
@@ -185,6 +226,46 @@
 </div>
 
 <script>
+// ── Auth gate ────────────────────────────────────────────────────────
+function gateSwitchTab(tab) {
+  document.getElementById('gate-tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('gate-tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('gate-panel-login').classList.toggle('active', tab === 'login');
+  document.getElementById('gate-panel-register').classList.toggle('active', tab === 'register');
+}
+function gateLogin() {
+  const email = document.getElementById('gate-login-email').value.trim();
+  const pass = document.getElementById('gate-login-pass').value;
+  if (!email || !pass) { showToast('請填寫電子信箱與密碼'); return; }
+  localStorage.setItem('bb_user', JSON.stringify({ name: email.split('@')[0], email }));
+  document.getElementById('auth-gate').classList.remove('show');
+  document.body.style.overflow = '';
+  showToast('登入成功！歡迎回來');
+}
+function gateRegister() {
+  const name = document.getElementById('gate-reg-name').value.trim();
+  const email = document.getElementById('gate-reg-email').value.trim();
+  const pass = document.getElementById('gate-reg-pass').value;
+  if (!name || !email || !pass) { showToast('請填寫所有欄位'); return; }
+  localStorage.setItem('bb_user', JSON.stringify({ name, email }));
+  document.getElementById('auth-gate').classList.remove('show');
+  document.body.style.overflow = '';
+  showToast('註冊成功！歡迎加入 Bunny Bliss');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => t.classList.remove('show'), 2500);
+}
+if (!localStorage.getItem('bb_user')) {
+  document.getElementById('auth-gate').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+// ── End auth gate ─────────────────────────────────────────────────────
+
 const SHIPPING_FEE = 60;
 let cart = JSON.parse(localStorage.getItem('bb_cart') || '[]');
 
@@ -540,5 +621,7 @@ function showConfirm(order) {
 
 render();
 </script>
+<div class="toast" id="toast" style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--brown);color:var(--white);padding:12px 24px;border-radius:50px;font-size:14px;font-weight:500;z-index:10000;transition:transform 0.3s;white-space:nowrap;"></div>
+<style>.toast.show{transform:translateX(-50%) translateY(0)!important;}</style>
 </body>
 </html>

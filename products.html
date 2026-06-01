@@ -304,8 +304,14 @@
   </div>
   <div class="mobile-nav-links">
     <div class="mobile-nav-auth">
-      <button class="btn-m-login" onclick="closeMobileNav();openAuth('login')">會員登入</button>
-      <button class="btn-m-register" onclick="closeMobileNav();openAuth('register')">立即註冊</button>
+      <span id="mob-auth-guest" style="display:contents">
+        <button class="btn-m-login" onclick="closeMobileNav();openAuth('login')">會員登入</button>
+        <button class="btn-m-register" onclick="closeMobileNav();openAuth('register')">立即註冊</button>
+      </span>
+      <span id="mob-auth-user" style="display:none;contents">
+        <button class="btn-m-login" id="mob-username" style="cursor:default;background:none;color:var(--gold);border:none"></button>
+        <button class="btn-m-register" onclick="closeMobileNav();doLogout()">登出</button>
+      </span>
     </div>
     <div class="mobile-nav-divider"></div>
     <a href="index.html" onclick="closeMobileNav()"><span class="nav-icon">🏠</span>首頁</a>
@@ -318,7 +324,7 @@
 
 <header id="site-header">
   <div class="header-inner">
-    <a class="logo" href="index.html"><img src="logo.png" alt="Bunny Bliss"></a>
+    <a class="logo" href="index.html"><img src="logo.jpg" alt="Bunny Bliss"></a>
     <nav>
       <a href="index.html">首頁</a>
       <a href="products.html" class="active">商品</a>
@@ -328,9 +334,16 @@
     </nav>
     <div class="header-actions">
       <button class="mobile-cat-toggle" onclick="toggleSidebar()">🏷 分類</button>
-      <button class="btn-text" onclick="openAuth('login')">會員登入</button>
-      <span class="btn-divider">/</span>
-      <button class="btn-text" onclick="openAuth('register')">註冊</button>
+      <span id="nav-auth-guest">
+        <button class="btn-text" onclick="openAuth('login')">會員登入</button>
+        <span class="btn-divider">/</span>
+        <button class="btn-text" onclick="openAuth('register')">註冊</button>
+      </span>
+      <span id="nav-auth-user" style="display:none">
+        <button class="btn-text" id="nav-username" style="cursor:default"></button>
+        <span class="btn-divider">/</span>
+        <button class="btn-text" onclick="doLogout()">登出</button>
+      </span>
       <button class="btn-cart" onclick="openCart()">
         🛒
         <span class="cart-badge" id="cart-badge">0</span>
@@ -397,7 +410,7 @@
       <span>小計</span>
       <span class="cart-total-price" id="cart-total-price">NT$0</span>
     </div>
-    <button class="btn-checkout" onclick="location.href='checkout.html'">前往結帳 →</button>
+    <button class="btn-checkout" onclick="goToCheckout()">前往結帳 →</button>
   </div>
 </div>
 
@@ -411,15 +424,15 @@
       <button class="auth-tab" id="tab-register" onclick="switchTab('register')">新會員註冊</button>
     </div>
     <div class="auth-panel active" id="panel-login">
-      <div class="form-group"><label>電子信箱</label><input type="email" placeholder="請輸入電子信箱"></div>
-      <div class="form-group"><label>密碼</label><input type="password" placeholder="請輸入密碼"></div>
-      <button class="btn-submit" onclick="closeOverlay('auth-overlay');showToast('登入成功！🐰')">登入</button>
+      <div class="form-group"><label>電子信箱</label><input id="login-email" type="email" placeholder="請輸入電子信箱"></div>
+      <div class="form-group"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼"></div>
+      <button class="btn-submit" onclick="doLogin()">登入</button>
     </div>
     <div class="auth-panel" id="panel-register">
-      <div class="form-group"><label>姓名</label><input type="text" placeholder="請輸入真實姓名"></div>
-      <div class="form-group"><label>電子信箱</label><input type="email" placeholder="請輸入電子信箱"></div>
-      <div class="form-group"><label>密碼</label><input type="password" placeholder="至少 8 個字元"></div>
-      <button class="btn-submit" onclick="closeOverlay('auth-overlay');showToast('註冊成功！🎉')">立即註冊</button>
+      <div class="form-group"><label>姓名</label><input id="reg-name" type="text" placeholder="請輸入真實姓名"></div>
+      <div class="form-group"><label>電子信箱</label><input id="reg-email" type="email" placeholder="請輸入電子信箱"></div>
+      <div class="form-group"><label>密碼</label><input id="reg-pass" type="password" placeholder="至少 8 個字元"></div>
+      <button class="btn-submit" onclick="doRegister()">立即註冊</button>
     </div>
   </div>
 </div>
@@ -559,6 +572,39 @@ function closeCart(){document.getElementById('cart-drawer').classList.remove('op
 function openAuth(tab){switchTab(tab);document.getElementById('auth-overlay').classList.add('active');document.body.style.overflow='hidden';}
 function switchTab(tab){document.getElementById('tab-login').classList.toggle('active',tab==='login');document.getElementById('tab-register').classList.toggle('active',tab==='register');document.getElementById('panel-login').classList.toggle('active',tab==='login');document.getElementById('panel-register').classList.toggle('active',tab==='register');}
 function closeOverlay(id){document.getElementById(id).classList.remove('active');document.body.style.overflow='';}
+function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){showToast('請填寫電子信箱與密碼');return;}
+  localStorage.setItem('bb_user',JSON.stringify({name:email.split('@')[0],email}));
+  closeOverlay('auth-overlay');showToast('登入成功！歡迎回來');
+  if(window._pendingCheckout){window._pendingCheckout=false;location.href='checkout.html';}
+}
+function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  if(!name||!email||!pass){showToast('請填寫所有欄位');return;}
+  localStorage.setItem('bb_user',JSON.stringify({name,email}));
+  closeOverlay('auth-overlay');showToast('註冊成功！歡迎加入 Bunny Bliss');
+  if(window._pendingCheckout){window._pendingCheckout=false;location.href='checkout.html';}
+}
+function doLogout(){localStorage.removeItem('bb_user');updateAuthNav();showToast('已登出');}
+function updateAuthNav(){
+  const user=JSON.parse(localStorage.getItem('bb_user')||'null');
+  document.getElementById('nav-auth-guest').style.display=user?'none':'';
+  document.getElementById('nav-auth-user').style.display=user?'':'none';
+  const mg=document.getElementById('mob-auth-guest');
+  const mu=document.getElementById('mob-auth-user');
+  if(mg)mg.style.display=user?'none':'';
+  if(mu)mu.style.display=user?'flex':'none';
+  if(user&&document.getElementById('nav-username'))document.getElementById('nav-username').textContent=user.name;
+  if(user&&document.getElementById('mob-username'))document.getElementById('mob-username').textContent=user.name;
+}
+function goToCheckout(){
+  if(localStorage.getItem('bb_user')){location.href='checkout.html';return;}
+  window._pendingCheckout=true;openAuth('login');
+}
 function toggleSidebar(){document.getElementById('shop-sidebar').classList.toggle('open');}
 function toggleMobileNav(){const open=document.getElementById('mob-drawer').classList.toggle('open');document.getElementById('mob-overlay').style.display=open?'block':'none';setTimeout(()=>document.getElementById('mob-overlay').classList.toggle('active',open),10);document.getElementById('hamburger').classList.toggle('open',open);document.body.style.overflow=open?'hidden':'';}
 function closeMobileNav(){document.getElementById('mob-drawer').classList.remove('open');document.getElementById('mob-overlay').classList.remove('active');document.getElementById('hamburger').classList.remove('open');setTimeout(()=>{document.getElementById('mob-overlay').style.display='none';},300);document.body.style.overflow='';}
@@ -571,6 +617,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 buildCatNav();
 renderProducts();
 updateCartBadge();
+updateAuthNav();
 </script>
 </body>
 </html>

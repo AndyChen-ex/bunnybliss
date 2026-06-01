@@ -234,6 +234,23 @@
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--brown); color: var(--white); padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 500; z-index: 300; transition: transform 0.3s; white-space: nowrap; }
     .toast.show { transform: translateX(-50%) translateY(0); }
 
+    /* Auth Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(61,43,31,0.55); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal { background: var(--white); border-radius: 24px; padding: 32px 28px; width: 100%; max-width: 380px; position: relative; }
+    .auth-logo { text-align: center; margin-bottom: 20px; }
+    .auth-tabs { display: flex; border-bottom: 2px solid var(--cream-dark); margin-bottom: 20px; }
+    .auth-tab { flex: 1; background: none; border: none; padding: 10px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--brown-light); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .auth-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--brown-mid); margin-bottom: 5px; }
+    .form-group input { width: 100%; padding: 10px 13px; border: 1.5px solid var(--cream-dark); border-radius: var(--radius-sm); font-family: inherit; font-size: 14px; color: var(--brown); background: var(--white); outline: none; transition: border-color 0.2s; }
+    .form-group input:focus { border-color: var(--gold); }
+    .btn-submit { width: 100%; background: var(--gold); color: var(--white); border: none; padding: 13px; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 4px; }
+    .btn-submit:hover { background: var(--gold-dark); }
+
     @media (max-width: 768px) {
       nav { display: none; }
       .hamburger { display: flex; }
@@ -242,7 +259,8 @@
       .btn-text, .btn-divider { display: none; }
       .detail-layout { flex-direction: column; gap: 28px; padding: 20px 16px 60px; }
       .detail-image-col { width: 100%; max-width: 100%; }
-      .img-carousel { padding-top: 0; height: calc(100vw - 32px); max-height: 360px; }
+      .img-carousel { padding-top: 0; height: 260px; }
+      .img-slide img { object-fit: contain; }
       .detail-info-col { position: static; }
       .cart-drawer { width: 100%; }
     }
@@ -280,8 +298,14 @@
   </div>
   <div class="mobile-nav-links">
     <div class="mobile-nav-auth">
-      <button class="btn-m-login" onclick="closeMobileNav();showToast('請登入 🐰')">會員登入</button>
-      <button class="btn-m-register" onclick="closeMobileNav();showToast('請登入 🐰')">立即註冊</button>
+      <span id="mob-auth-guest">
+        <button class="btn-m-login" onclick="closeMobileNav();openAuth('login')">會員登入</button>
+        <button class="btn-m-register" onclick="closeMobileNav();openAuth('register')">立即註冊</button>
+      </span>
+      <span id="mob-auth-user" style="display:none">
+        <button class="btn-m-login" id="mob-username" style="cursor:default;width:auto;background:none;color:var(--gold);border:none"></button>
+        <button class="btn-m-register" onclick="closeMobileNav();doLogout()">登出</button>
+      </span>
     </div>
     <div class="mobile-nav-divider"></div>
     <a href="index.html" onclick="closeMobileNav()"><span class="nav-icon">🏠</span>首頁</a>
@@ -294,7 +318,7 @@
 
 <header id="site-header">
   <div class="header-inner">
-    <a class="logo" href="index.html"><img src="logo.png" alt="Bunny Bliss"></a>
+    <a class="logo" href="index.html"><img src="logo.jpg" alt="Bunny Bliss"></a>
     <nav>
       <a href="index.html">首頁</a>
       <a href="products.html" class="active">商品</a>
@@ -303,9 +327,16 @@
       <a href="#">聯絡我們</a>
     </nav>
     <div class="header-actions">
-      <button class="btn-text" onclick="openAuth()">會員登入</button>
-      <span class="btn-divider">/</span>
-      <button class="btn-text" onclick="openAuth()">註冊</button>
+      <span id="nav-auth-guest">
+        <button class="btn-text" onclick="openAuth('login')">會員登入</button>
+        <span class="btn-divider">/</span>
+        <button class="btn-text" onclick="openAuth('register')">註冊</button>
+      </span>
+      <span id="nav-auth-user" style="display:none">
+        <button class="btn-text" id="nav-username" style="cursor:default"></button>
+        <span class="btn-divider">/</span>
+        <button class="btn-text" onclick="doLogout()">登出</button>
+      </span>
       <button class="btn-cart" onclick="openCart()">
         🛒
         <span class="cart-badge" id="cart-badge">0</span>
@@ -326,7 +357,30 @@
   <div class="cart-items" id="cart-items-list"></div>
   <div class="cart-footer" id="cart-footer" style="display:none">
     <div class="cart-total"><span>小計</span><span class="cart-total-price" id="cart-total-price">NT$0</span></div>
-    <button class="btn-checkout" onclick="location.href='checkout.html'">前往結帳 →</button>
+    <button class="btn-checkout" onclick="goToCheckout()">前往結帳 →</button>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-overlay" onclick="closeAuthOverlay()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeAuthOverlay()" style="position:absolute;top:16px;right:16px">✕</button>
+    <div class="auth-logo"><div style="font-family:'Noto Serif TC',serif;font-size:22px;font-weight:600;color:var(--gold);">🐰 Bunny Bliss</div></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">會員登入</button>
+      <button class="auth-tab" id="tab-register" onclick="switchTab('register')">新會員註冊</button>
+    </div>
+    <div class="auth-panel active" id="panel-login">
+      <div class="form-group"><label>電子信箱</label><input id="login-email" type="email" placeholder="請輸入電子信箱"></div>
+      <div class="form-group"><label>密碼</label><input id="login-pass" type="password" placeholder="請輸入密碼"></div>
+      <button class="btn-submit" onclick="doLogin()">登入</button>
+    </div>
+    <div class="auth-panel" id="panel-register">
+      <div class="form-group"><label>姓名</label><input id="reg-name" type="text" placeholder="請輸入真實姓名"></div>
+      <div class="form-group"><label>電子信箱</label><input id="reg-email" type="email" placeholder="請輸入電子信箱"></div>
+      <div class="form-group"><label>密碼</label><input id="reg-pass" type="password" placeholder="至少 8 個字元"></div>
+      <button class="btn-submit" onclick="doRegister()">立即註冊</button>
+    </div>
   </div>
 </div>
 
@@ -541,7 +595,40 @@ function changeQty(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);saveCa
 function removeItem(i){cart.splice(i,1);saveCart();updateCartBadge();renderCart();}
 function openCart(){renderCart();document.getElementById('cart-drawer').classList.add('open');document.getElementById('cart-overlay').classList.add('active');document.body.style.overflow='hidden';}
 function closeCart(){document.getElementById('cart-drawer').classList.remove('open');document.getElementById('cart-overlay').classList.remove('active');document.body.style.overflow='';}
-function openAuth(){showToast('請先登入 🐰');}
+function openAuth(tab='login'){switchTab(tab);document.getElementById('auth-overlay').classList.add('active');document.body.style.overflow='hidden';}
+function closeAuthOverlay(){document.getElementById('auth-overlay').classList.remove('active');document.body.style.overflow='';}
+function switchTab(tab){document.getElementById('tab-login').classList.toggle('active',tab==='login');document.getElementById('tab-register').classList.toggle('active',tab==='register');document.getElementById('panel-login').classList.toggle('active',tab==='login');document.getElementById('panel-register').classList.toggle('active',tab==='register');}
+function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){showToast('請填寫電子信箱與密碼');return;}
+  localStorage.setItem('bb_user',JSON.stringify({name:email.split('@')[0],email}));
+  updateAuthNav();closeAuthOverlay();showToast('登入成功！歡迎回來');
+  if(window._pendingCheckout){window._pendingCheckout=false;location.href='checkout.html';}
+}
+function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  if(!name||!email||!pass){showToast('請填寫所有欄位');return;}
+  localStorage.setItem('bb_user',JSON.stringify({name,email}));
+  updateAuthNav();closeAuthOverlay();showToast('註冊成功！歡迎加入 Bunny Bliss');
+  if(window._pendingCheckout){window._pendingCheckout=false;location.href='checkout.html';}
+}
+function doLogout(){localStorage.removeItem('bb_user');updateAuthNav();showToast('已登出');}
+function updateAuthNav(){
+  const user=JSON.parse(localStorage.getItem('bb_user')||'null');
+  document.getElementById('nav-auth-guest').style.display=user?'none':'';
+  document.getElementById('nav-auth-user').style.display=user?'':'none';
+  document.getElementById('mob-auth-guest').style.display=user?'none':'';
+  document.getElementById('mob-auth-user').style.display=user?'':'none';
+  if(user){document.getElementById('nav-username').textContent=user.name;document.getElementById('mob-username').textContent=user.name;}
+}
+function goToCheckout(){
+  if(localStorage.getItem('bb_user')){location.href='checkout.html';return;}
+  window._pendingCheckout=true;openAuth('login');
+}
+updateAuthNav();
 
 function toggleMobileNav(){const open=document.getElementById('mob-drawer').classList.toggle('open');document.getElementById('mob-overlay').style.display=open?'block':'none';setTimeout(()=>document.getElementById('mob-overlay').classList.toggle('active',open),10);document.getElementById('hamburger').classList.toggle('open',open);document.body.style.overflow=open?'hidden':'';}
 function closeMobileNav(){document.getElementById('mob-drawer').classList.remove('open');document.getElementById('mob-overlay').classList.remove('active');document.getElementById('hamburger').classList.remove('open');setTimeout(()=>{document.getElementById('mob-overlay').style.display='none';},300);document.body.style.overflow='';}
