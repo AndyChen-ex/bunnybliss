@@ -156,7 +156,7 @@
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="index.html"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
+    <a class="logo" href="/"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
     <div class="page-title">確認訂單</div>
     <button class="btn-back" onclick="history.back()">← 返回</button>
   </div>
@@ -221,7 +221,7 @@
     <div class="confirm-h">訂單已成立！</div>
     <div class="confirm-oid" id="confirm-oid"></div>
     <div class="pay-block" id="pay-block"></div>
-    <a class="btn-done" href="index.html">回到首頁</a>
+    <a class="btn-done" href="/">回到首頁</a>
   </div>
 </div>
 
@@ -412,7 +412,7 @@ function renderSummary() {
 function render() {
   const main = document.getElementById('main');
   if (!cart.length) {
-    main.innerHTML = `<div class="empty-state"><div class="icon">🛒</div><h2>購物車是空的</h2><p>先去挑選喜歡的商品吧！</p><a class="btn-go" href="products.html">前往商品頁</a></div>`;
+    main.innerHTML = `<div class="empty-state"><div class="icon">🛒</div><h2>購物車是空的</h2><p>先去挑選喜歡的商品吧！</p><a class="btn-go" href="/products">前往商品頁</a></div>`;
     return;
   }
   main.innerHTML = `

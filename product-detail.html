@@ -311,9 +311,9 @@
       </span>
     </div>
     <div class="mobile-nav-divider"></div>
-    <a href="index.html" onclick="closeMobileNav()"><span class="nav-icon">🏠</span>首頁</a>
-    <a href="products.html" onclick="closeMobileNav()"><span class="nav-icon">🍪</span>商品</a>
-    <a href="index.html#about" onclick="closeMobileNav()"><span class="nav-icon">🐰</span>關於我們</a>
+    <a href="/" onclick="closeMobileNav()"><span class="nav-icon">🏠</span>首頁</a>
+    <a href="/products" onclick="closeMobileNav()"><span class="nav-icon">🍪</span>商品</a>
+    <a href="/#about" onclick="closeMobileNav()"><span class="nav-icon">🐰</span>關於我們</a>
     <a href="#" onclick="closeMobileNav()"><span class="nav-icon">📦</span>購物說明</a>
     <a href="#" onclick="closeMobileNav()"><span class="nav-icon">✉️</span>聯絡我們</a>
   </div>
@@ -321,11 +321,11 @@
 
 <header id="site-header">
   <div class="header-inner">
-    <a class="logo" href="index.html"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
+    <a class="logo" href="/"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
     <nav>
-      <a href="index.html">首頁</a>
-      <a href="products.html" class="active">商品</a>
-      <a href="index.html#about">關於我們</a>
+      <a href="/">首頁</a>
+      <a href="/products" class="active">商品</a>
+      <a href="/#about">關於我們</a>
       <a href="#">購物說明</a>
       <a href="#">聯絡我們</a>
     </nav>
@@ -424,7 +424,7 @@ function render() {
         <div class="icon">🔍</div>
         <h2>找不到此商品</h2>
         <p>商品可能已下架或網址有誤</p>
-        <a class="btn-back" href="products.html">← 回到商品列表</a>
+        <a class="btn-back" href="/products">← 回到商品列表</a>
       </div>`;
     document.title = '找不到商品 | Bunny Bliss';
     return;
@@ -440,9 +440,9 @@ function render() {
 
   document.getElementById('page-content').innerHTML = `
     <div class="breadcrumb">
-      <a href="index.html">首頁</a> ›
-      <a href="products.html">商品</a> ›
-      ${cat ? `<a href="products.html?cat=${cat.id}">${esc(cat.name)}</a> › ` : ''}
+      <a href="/">首頁</a> ›
+      <a href="/products">商品</a> ›
+      ${cat ? `<a href="/products?cat=${cat.id}">${esc(cat.name)}</a> › ` : ''}
       <span>${esc(product.name)}</span>
     </div>
 
@@ -458,7 +458,7 @@ function render() {
       </div>
 
       <div class="detail-info-col">
-        ${cat ? `<a class="detail-cat-tag" href="products.html?cat=${cat.id}" style="background:${cat.color}20;color:${cat.color};border:1.5px solid ${cat.color}40">${esc(cat.name)}</a>` : ''}
+        ${cat ? `<a class="detail-cat-tag" href="/products?cat=${cat.id}" style="background:${cat.color}20;color:${cat.color};border:1.5px solid ${cat.color}40">${esc(cat.name)}</a>` : ''}
         <h1 class="detail-name">${esc(product.name)}</h1>
         <div class="detail-price" id="detail-price-display">NT$${getEffectivePrice(1,product)} <small>/ 盒</small></div>
 
@@ -522,7 +522,7 @@ function render() {
       <h3>同系列商品</h3>
       <div class="related-grid">
         ${related.map(r => `
-          <a class="related-card" href="product-detail.html?id=${r.id}">
+          <a class="related-card" href="/product-detail?id=${r.id}">
             <div class="related-img">
               <img src="${esc((r.images&&r.images[0])||r.image||'')}" alt="${esc(r.name)}" onerror="this.style.display='none'">
             </div>
@@ -612,7 +612,7 @@ function doLogin(){
   if(!email||!pass){showToast('請填寫電子信箱與密碼');return;}
   localStorage.setItem('bb_user',JSON.stringify({name:email.split('@')[0],email}));
   updateAuthNav();closeAuthOverlay();showToast('登入成功！歡迎回來');
-  if(window._pendingCheckout){window._pendingCheckout=false;location.href='checkout.html';}
+  if(window._pendingCheckout){window._pendingCheckout=false;location.href='/checkout';}
 }
 function doRegister(){
   const name=document.getElementById('reg-name').value.trim();
@@ -621,7 +621,7 @@ function doRegister(){
   if(!name||!email||!pass){showToast('請填寫所有欄位');return;}
   localStorage.setItem('bb_user',JSON.stringify({name,email}));
   updateAuthNav();closeAuthOverlay();showToast('註冊成功！歡迎加入 Bunny Bliss');
-  if(window._pendingCheckout){window._pendingCheckout=false;location.href='checkout.html';}
+  if(window._pendingCheckout){window._pendingCheckout=false;location.href='/checkout';}
 }
 function doLogout(){localStorage.removeItem('bb_user');updateAuthNav();showToast('已登出');}
 function updateAuthNav(){
@@ -633,7 +633,7 @@ function updateAuthNav(){
   if(user){document.getElementById('nav-username').textContent=user.name;document.getElementById('mob-username').textContent=user.name;}
 }
 function goToCheckout(){
-  if(localStorage.getItem('bb_user')){location.href='checkout.html';return;}
+  if(localStorage.getItem('bb_user')){location.href='/checkout';return;}
   window._pendingCheckout=true;openAuth('login');
 }
 updateAuthNav();

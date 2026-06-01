@@ -314,9 +314,9 @@
       </span>
     </div>
     <div class="mobile-nav-divider"></div>
-    <a href="index.html" onclick="closeMobileNav()"><span class="nav-icon">🏠</span>首頁</a>
-    <a href="products.html" class="active" onclick="closeMobileNav()"><span class="nav-icon">🍪</span>商品</a>
-    <a href="index.html#about" onclick="closeMobileNav()"><span class="nav-icon">🐰</span>關於我們</a>
+    <a href="/" onclick="closeMobileNav()"><span class="nav-icon">🏠</span>首頁</a>
+    <a href="/products" class="active" onclick="closeMobileNav()"><span class="nav-icon">🍪</span>商品</a>
+    <a href="/#about" onclick="closeMobileNav()"><span class="nav-icon">🐰</span>關於我們</a>
     <a href="#" onclick="closeMobileNav()"><span class="nav-icon">📦</span>購物說明</a>
     <a href="#" onclick="closeMobileNav()"><span class="nav-icon">✉️</span>聯絡我們</a>
   </div>
@@ -324,11 +324,11 @@
 
 <header id="site-header">
   <div class="header-inner">
-    <a class="logo" href="index.html"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
+    <a class="logo" href="/"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
     <nav>
-      <a href="index.html">首頁</a>
-      <a href="products.html" class="active">商品</a>
-      <a href="index.html#about">關於我們</a>
+      <a href="/">首頁</a>
+      <a href="/products" class="active">商品</a>
+      <a href="/#about">關於我們</a>
       <a href="#">購物說明</a>
       <a href="#">聯絡我們</a>
     </nav>
@@ -356,7 +356,7 @@
 </header>
 
 <div class="breadcrumb">
-  <a href="index.html">首頁</a> › <span>商品列表</span>
+  <a href="/">首頁</a> › <span>商品列表</span>
 </div>
 
 <div class="shop-layout">
@@ -537,7 +537,7 @@ function renderProducts() {
   grid.innerHTML = products.map(p => {
     const cat = cats.find(c=>c.id===p.categoryId);
     return `<div class="product-card">
-      <a class="product-card-link" href="product-detail.html?id=${p.id}">
+      <a class="product-card-link" href="/product-detail?id=${p.id}">
         <div class="product-img-wrap">
           <img src="${esc((p.images&&p.images[0])||p.image||'')}" alt="${esc(p.name)}" onerror="this.style.display='none'">
           ${p.badge?`<span class="product-badge" style="background:${esc(p.badgeColor||'#f2b8c6')};color:#3d2b1f">${esc(p.badge)}</span>`:''}
@@ -583,7 +583,7 @@ function doLogin(){
   if(!email||!pass){showToast('請填寫電子信箱與密碼');return;}
   localStorage.setItem('bb_user',JSON.stringify({name:email.split('@')[0],email}));
   closeOverlay('auth-overlay');showToast('登入成功！歡迎回來');
-  if(window._pendingCheckout){window._pendingCheckout=false;location.href='checkout.html';}
+  if(window._pendingCheckout){window._pendingCheckout=false;location.href='/checkout';}
 }
 function doRegister(){
   const name=document.getElementById('reg-name').value.trim();
@@ -592,7 +592,7 @@ function doRegister(){
   if(!name||!email||!pass){showToast('請填寫所有欄位');return;}
   localStorage.setItem('bb_user',JSON.stringify({name,email}));
   closeOverlay('auth-overlay');showToast('註冊成功！歡迎加入 Bunny Bliss');
-  if(window._pendingCheckout){window._pendingCheckout=false;location.href='checkout.html';}
+  if(window._pendingCheckout){window._pendingCheckout=false;location.href='/checkout';}
 }
 function doLogout(){localStorage.removeItem('bb_user');updateAuthNav();showToast('已登出');}
 function updateAuthNav(){
@@ -607,7 +607,7 @@ function updateAuthNav(){
   if(user&&document.getElementById('mob-username'))document.getElementById('mob-username').textContent=user.name;
 }
 function goToCheckout(){
-  if(localStorage.getItem('bb_user')){location.href='checkout.html';return;}
+  if(localStorage.getItem('bb_user')){location.href='/checkout';return;}
   window._pendingCheckout=true;openAuth('login');
 }
 function toggleSidebar(){document.getElementById('shop-sidebar').classList.toggle('open');}

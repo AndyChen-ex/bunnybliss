@@ -28,7 +28,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static('.'));
+app.use(express.static('.', { extensions: ['html'] }));
 
 // 國內物流使用 CheckMacValue MD5（不是 SHA256），Node.js 版本精確翻譯自 PHP SDK
 // 參考：ECPay-API-Skill/guides/13-checkmacvalue.md §Node.js
