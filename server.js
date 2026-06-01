@@ -4,6 +4,12 @@ const crypto = require('crypto');
 const axios = require('axios');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -103,6 +109,64 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     res.json({ url: result.secure_url });
   } catch (err) {
     console.error('[Cloudinary] 上傳失敗:', err.message, err.http_code, JSON.stringify(err));
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/status  — 全站健康檢查
+app.get('/api/status', async (req, res) => {
+  const result = {
+    server: 'ok',
+    timestamp: new Date().toISOString(),
+    supabase: 'unknown',
+    cloudinary: 'unknown',
+  };
+
+  // 測試 Supabase
+  try {
+    const { error } = await supabase.from('store_data').select('key').limit(1);
+    result.supabase = error ? `error: ${error.message}` : 'ok';
+  } catch (e) {
+    result.supabase = `error: ${e.message}`;
+  }
+
+  // 確認 Cloudinary 設定有沒有缺漏
+  const { cloud_name, api_key, api_secret } = cloudinary.config();
+  result.cloudinary = (cloud_name && api_key && api_secret) ? 'ok' : 'missing config';
+
+  const allOk = result.supabase === 'ok' && result.cloudinary === 'ok';
+  res.status(allOk ? 200 : 500).json(result);
+});
+
+// GET /api/store/:key  — 讀取商品/橫幅等資料
+app.get('/api/store/:key', async (req, res) => {
+  const allowed = ['products', 'banners', 'categories', 'addons', 'settings'];
+  if (!allowed.includes(req.params.key)) return res.status(400).json({ error: 'invalid key' });
+  try {
+    const { data, error } = await supabase
+      .from('store_data')
+      .select('value')
+      .eq('key', req.params.key)
+      .single();
+    if (error && error.code === 'PGRST116') return res.json(null); // 尚未建立
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data.value);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/store/:key  — 後台儲存商品/橫幅等資料
+app.post('/api/store/:key', async (req, res) => {
+  const allowed = ['products', 'banners', 'categories', 'addons', 'settings'];
+  if (!allowed.includes(req.params.key)) return res.status(400).json({ error: 'invalid key' });
+  try {
+    const { error } = await supabase
+      .from('store_data')
+      .upsert({ key: req.params.key, value: req.body, updated_at: new Date().toISOString() });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

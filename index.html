@@ -520,7 +520,7 @@
   <div class="features-inner" id="features-inner"></div>
 </div>
 <script>
-(function() {
+function renderFeatures() {
   const defaults = [
     { icon: '🧈', title: '純天然食材',   desc: '無添加防腐劑，\n選用優質奶油與麵粉' },
     { icon: '👐', title: '職人手工製作', desc: '每批限量生產，\n保證新鮮現烤' },
@@ -536,7 +536,7 @@
       <div class="feature-desc">${f.desc.replace(/\n/g, '<br>')}</div>
     </div>`
   ).join('');
-})();
+}
 </script>
 
 <!-- Products -->
@@ -690,6 +690,15 @@ function getBanners() {
 function getProducts() {
   const raw = localStorage.getItem('bb_products');
   return raw ? JSON.parse(raw) : DEFAULT_PRODUCTS;
+}
+async function loadStoreData() {
+  await Promise.all(['products', 'banners', 'settings'].map(async key => {
+    try {
+      const r = await fetch(`/api/store/${key}`);
+      const data = await r.json();
+      if (data !== null) localStorage.setItem(`bb_${key}`, JSON.stringify(data));
+    } catch (e) {}
+  }));
 }
 
 // ── Carousel ──
@@ -945,9 +954,13 @@ function showToast(msg) {
 }
 
 // ── Init ──
-renderCarousel();
-renderProducts();
-updateCartBadge();
+(async () => {
+  await loadStoreData();
+  renderFeatures();
+  renderCarousel();
+  renderProducts();
+  updateCartBadge();
+})();
 </script>
 </body>
 </html>

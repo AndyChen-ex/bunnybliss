@@ -924,7 +924,10 @@ function doLogout() {
 if (sessionStorage.getItem('bb_admin') === '1') {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').classList.add('visible');
-  document.addEventListener('DOMContentLoaded', initApp);
+  document.addEventListener('DOMContentLoaded', async () => {
+    await initFromServer();
+    initApp();
+  });
 }
 
 // ── Gradients ──
@@ -951,7 +954,7 @@ function getCategories() {
   const r = localStorage.getItem('bb_categories');
   return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
 }
-function saveCategories(d) { localStorage.setItem('bb_categories', JSON.stringify(d)); }
+function saveCategories(d) { localStorage.setItem('bb_categories', JSON.stringify(d)); syncToServer('categories', d); }
 
 function addCategory() {
   const name = document.getElementById('cat-new-name').value.trim();
@@ -1066,8 +1069,8 @@ const DEFAULT_PRODUCTS = [
 
 function getBanners() { const r = localStorage.getItem('bb_banners'); return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_BANNERS)); }
 function getProducts() { const r = localStorage.getItem('bb_products'); return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)); }
-function saveBanners(d) { localStorage.setItem('bb_banners', JSON.stringify(d)); }
-function saveProducts(d) { localStorage.setItem('bb_products', JSON.stringify(d)); }
+function saveBanners(d) { localStorage.setItem('bb_banners', JSON.stringify(d)); syncToServer('banners', d); }
+function saveProducts(d) { localStorage.setItem('bb_products', JSON.stringify(d)); syncToServer('products', d); }
 
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id)) + 1 : 1; }
 
@@ -1100,6 +1103,31 @@ function openAddModal() {
   if (currentPanel === 'banners') openBannerModal(null);
   if (currentPanel === 'products') openProductModal(null);
   if (currentPanel === 'addons') openAddonModal(null);
+}
+
+async function initFromServer() {
+  const keys = ['products', 'banners', 'categories', 'addons', 'settings'];
+  await Promise.all(keys.map(async key => {
+    try {
+      const r = await fetch(`/api/store/${key}`);
+      const data = await r.json();
+      if (data !== null) localStorage.setItem(`bb_${key}`, JSON.stringify(data));
+    } catch (e) {
+      console.warn('[Supabase] 載入失敗，使用本地快取', key, e);
+    }
+  }));
+}
+
+async function syncToServer(key, data) {
+  try {
+    await fetch(`/api/store/${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  } catch (e) {
+    console.warn('[Supabase] 儲存失敗', key, e);
+  }
 }
 
 function initApp() {
@@ -1699,6 +1727,7 @@ function saveSettings() {
     features,
   };
   localStorage.setItem('bb_settings', JSON.stringify(s));
+  syncToServer('settings', s);
   showToast('設定已儲存 ✓');
 }
 
@@ -1729,7 +1758,7 @@ const DEFAULT_ADDONS = [
   { id: 1, name: '兔子袋款', price: 30, active: true }
 ];
 function getAddons() { const r = localStorage.getItem('bb_addons'); return r ? JSON.parse(r) : JSON.parse(JSON.stringify(DEFAULT_ADDONS)); }
-function saveAddons(a) { localStorage.setItem('bb_addons', JSON.stringify(a)); }
+function saveAddons(a) { localStorage.setItem('bb_addons', JSON.stringify(a)); syncToServer('addons', a); }
 
 let editingAddonId = null;
 

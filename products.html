@@ -454,6 +454,11 @@ const DEFAULT_PRODUCTS = [
 
 function getCategories(){const r=localStorage.getItem('bb_categories');return r?JSON.parse(r):DEFAULT_CATEGORIES;}
 function getProducts(){const r=localStorage.getItem('bb_products');return r?JSON.parse(r):DEFAULT_PRODUCTS;}
+async function loadStoreData(){
+  await Promise.all(['products','categories'].map(async key=>{
+    try{const r=await fetch(`/api/store/${key}`);const d=await r.json();if(d!==null)localStorage.setItem(`bb_${key}`,JSON.stringify(d));}catch(e){}
+  }));
+}
 
 // URL param
 const params = new URLSearchParams(location.search);
@@ -614,10 +619,13 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 let toastT;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2500);}
 
-buildCatNav();
-renderProducts();
-updateCartBadge();
-updateAuthNav();
+(async()=>{
+  await loadStoreData();
+  buildCatNav();
+  renderProducts();
+  updateCartBadge();
+  updateAuthNav();
+})();
 </script>
 </body>
 </html>
