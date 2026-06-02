@@ -1,7 +1,7 @@
 {
   "name": "bunnybliss",
   "version": "1.0.0",
-  "description": "Bunny Bliss shop server",
+  "description": "Bliss shop server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

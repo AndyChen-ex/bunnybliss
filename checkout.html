@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/png" href="https://res.cloudinary.com/dtszpqdqo/image/upload/w_32,h_32,c_fit/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>結帳 | Bunny Bliss</title>
+  <title>結帳 | Bliss</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -157,7 +157,7 @@
 
 <header>
   <div class="header-inner">
-    <a class="logo" href="/"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
+    <a class="logo" href="/"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bliss"></a>
     <div class="page-title">確認訂單</div>
     <button class="btn-back" onclick="history.back()">← 返回</button>
   </div>
@@ -166,7 +166,7 @@
 <!-- Auth Gate -->
 <div id="auth-gate">
   <div class="gate-box">
-    <div class="gate-logo"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss" style="height:48px;"></div>
+    <div class="gate-logo"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bliss" style="height:48px;"></div>
     <div class="gate-hint">請先登入或註冊會員，才能繼續結帳</div>
     <div class="gate-tabs">
       <button class="gate-tab active" id="gate-tab-login" onclick="gateSwitchTab('login')">會員登入</button>
@@ -261,7 +261,7 @@ async function gateRegister() {
   if (data.session) {
     document.getElementById('auth-gate').classList.remove('show');
     document.body.style.overflow = '';
-    showToast('註冊成功！歡迎加入 Bunny Bliss');
+    showToast('註冊成功！歡迎加入 Bliss');
   } else {
     showToast('驗證信已送出，請查收 Email 完成驗證！');
   }

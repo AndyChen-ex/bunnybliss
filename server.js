@@ -194,6 +194,6 @@ app.post('/api/store/:key', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Bunny Bliss server: http://localhost:${PORT}`);
+  console.log(`Bliss server: http://localhost:${PORT}`);
   console.log(`ECPay 物流 URL: ${process.env.ECPAY_LOGISTICS_URL}`);
 });

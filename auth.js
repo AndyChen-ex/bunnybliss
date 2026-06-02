@@ -27,18 +27,27 @@ function updateAuthNav(user) {
   ['nav-username', 'mob-username'].forEach(id => { const e = document.getElementById(id); if (e) e.textContent = name; });
 }
 
+let _authLoading = false;
+
 async function doLogin() {
+  if (_authLoading) return;
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
   if (!email || !pass) { showToast('請填寫電子信箱與密碼'); return; }
-  const { error } = await window._sb.auth.signInWithPassword({ email, password: pass });
-  if (error) { showToast('電子信箱或密碼錯誤，或 Email 尚未驗證'); return; }
-  if (typeof window._closeAuthModal === 'function') window._closeAuthModal();
-  showToast('登入成功！歡迎回來');
-  if (window._pendingCheckout) { window._pendingCheckout = false; location.href = '/checkout'; }
+  _authLoading = true;
+  try {
+    const { error } = await window._sb.auth.signInWithPassword({ email, password: pass });
+    if (error) { showToast('電子信箱或密碼錯誤，或 Email 尚未驗證'); return; }
+    if (typeof window._closeAuthModal === 'function') window._closeAuthModal();
+    showToast('登入成功！歡迎回來');
+    if (window._pendingCheckout) { window._pendingCheckout = false; location.href = '/checkout'; }
+  } finally {
+    _authLoading = false;
+  }
 }
 
 async function doRegister() {
+  if (_authLoading) return;
   const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pass = document.getElementById('reg-pass').value;
@@ -46,20 +55,25 @@ async function doRegister() {
   const pass2El = document.getElementById('reg-pass2');
   if (pass2El && pass !== pass2El.value) { showToast('兩次密碼不一致'); return; }
   if (pass.length < 6) { showToast('密碼至少需要 6 個字元'); return; }
-  const { exists } = await fetch('/api/check-email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  }).then(r => r.json());
-  if (exists) { showToast('此 Email 已註冊，請直接登入'); return; }
-  const { data, error } = await window._sb.auth.signUp({ email, password: pass, options: { data: { name } } });
-  if (error) { showToast('註冊失敗：' + error.message); return; }
-  if (typeof window._closeAuthModal === 'function') window._closeAuthModal();
-  if (data.session) {
-    showToast('註冊成功！歡迎加入 Bunny Bliss');
-    if (window._pendingCheckout) { window._pendingCheckout = false; location.href = '/checkout'; }
-  } else {
-    showToast('驗證信已送出，請查收 Email 完成驗證！');
+  _authLoading = true;
+  try {
+    const { exists } = await fetch('/api/check-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }).then(r => r.json());
+    if (exists) { showToast('此 Email 已註冊，請直接登入'); return; }
+    const { data, error } = await window._sb.auth.signUp({ email, password: pass, options: { data: { name } } });
+    if (error) { showToast('註冊失敗：' + error.message); return; }
+    if (typeof window._closeAuthModal === 'function') window._closeAuthModal();
+    if (data.session) {
+      showToast('註冊成功！歡迎加入 Bliss');
+      if (window._pendingCheckout) { window._pendingCheckout = false; location.href = '/checkout'; }
+    } else {
+      showToast('驗證信已送出，請查收 Email 完成驗證！');
+    }
+  } finally {
+    _authLoading = false;
   }
 }
 

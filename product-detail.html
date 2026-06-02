@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/png" href="https://res.cloudinary.com/dtszpqdqo/image/upload/w_32,h_32,c_fit/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>商品詳情 | Bunny Bliss</title>
+  <title>商品詳情 | Bliss</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -204,7 +204,7 @@
     .btn-back:hover { background: var(--gold-dark); }
 
     /* Cart Drawer */
-    .cart-drawer { position: fixed; top: 0; right: 0; width: 380px; height: 100vh; background: var(--white); z-index: 200; box-shadow: -8px 0 40px rgba(61,43,31,0.12); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .cart-drawer { position: fixed; top: 0; right: 0; width: 380px; height: 100vh; height: 100dvh; background: var(--white); z-index: 200; box-shadow: -8px 0 40px rgba(61,43,31,0.12); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
     .cart-drawer.open { transform: translateX(0); }
     .cart-drawer-overlay { position: fixed; inset: 0; background: rgba(61,43,31,0.35); z-index: 199; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     .cart-drawer-overlay.active { opacity: 1; pointer-events: all; }
@@ -225,7 +225,7 @@
     .qty-num-s { font-size: 14px; font-weight: 600; min-width: 20px; text-align: center; }
     .cart-item-remove { background: none; border: none; cursor: pointer; color: var(--brown-light); font-size: 16px; padding: 4px; }
     .cart-item-remove:hover { color: #e05555; }
-    .cart-footer { padding: 20px 24px; border-top: 1px solid var(--cream-dark); flex-shrink: 0; }
+    .cart-footer { padding: 20px 24px; padding-bottom: max(20px, calc(20px + env(safe-area-inset-bottom))); border-top: 1px solid var(--cream-dark); flex-shrink: 0; }
     .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .cart-total span:first-child { font-size: 14px; color: var(--brown-mid); }
     .cart-total-price { font-size: 22px; font-weight: 700; color: var(--gold); }
@@ -298,7 +298,7 @@
 <div class="mobile-nav-overlay" id="mob-overlay" onclick="closeMobileNav()"></div>
 <div class="mobile-nav-drawer" id="mob-drawer">
   <div class="mobile-nav-header">
-    <span class="brand"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss" style="height:32px;vertical-align:middle;"></span>
+    <span class="brand"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bliss" style="height:32px;vertical-align:middle;"></span>
     <button class="mobile-nav-close" onclick="closeMobileNav()">✕</button>
   </div>
   <div class="mobile-nav-links">
@@ -323,7 +323,7 @@
 
 <header id="site-header">
   <div class="header-inner">
-    <a class="logo" href="/"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss"></a>
+    <a class="logo" href="/"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bliss"></a>
     <nav>
       <a href="/">首頁</a>
       <a href="/products" class="active">商品</a>
@@ -370,7 +370,7 @@
 <div class="modal-overlay" id="auth-overlay" onclick="closeAuthOverlay()">
   <div class="modal" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeAuthOverlay()" style="position:absolute;top:16px;right:16px">✕</button>
-    <div class="auth-logo"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss" style="height:160px;"></div>
+    <div class="auth-logo"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bliss" style="height:160px;"></div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">會員登入</button>
       <button class="auth-tab" id="tab-register" onclick="switchTab('register')">新會員註冊</button>
@@ -428,12 +428,12 @@ function render() {
         <p>商品可能已下架或網址有誤</p>
         <a class="btn-back" href="/products">← 回到商品列表</a>
       </div>`;
-    document.title = '找不到商品 | Bunny Bliss';
+    document.title = '找不到商品 | Bliss';
     return;
   }
 
   const cat = cats.find(c => c.id === product.categoryId);
-  document.title = `${product.name} | Bunny Bliss`;
+  document.title = `${product.name} | Bliss`;
 
   // Related: same category, exclude self
   const related = getProducts()
