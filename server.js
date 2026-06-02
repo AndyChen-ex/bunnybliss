@@ -79,6 +79,14 @@ async function fetchFromEcpay(cvsType) {
   return data;
 }
 
+// GET /api/config — 回傳前端需要的公開設定
+app.get('/api/config', (req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+  });
+});
+
 // GET /api/cvs-stores?type=FAMI|UNIMART|HILIFE|OKMART|All
 app.get('/api/cvs-stores', async (req, res) => {
   const cvsType = req.query.type || 'All';

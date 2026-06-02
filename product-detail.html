@@ -296,7 +296,7 @@
 <div class="mobile-nav-overlay" id="mob-overlay" onclick="closeMobileNav()"></div>
 <div class="mobile-nav-drawer" id="mob-drawer">
   <div class="mobile-nav-header">
-    <span class="brand">🐰 Bunny Bliss</span>
+    <span class="brand"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss" style="height:32px;vertical-align:middle;"></span>
     <button class="mobile-nav-close" onclick="closeMobileNav()">✕</button>
   </div>
   <div class="mobile-nav-links">
@@ -368,7 +368,7 @@
 <div class="modal-overlay" id="auth-overlay" onclick="closeAuthOverlay()">
   <div class="modal" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeAuthOverlay()" style="position:absolute;top:16px;right:16px">✕</button>
-    <div class="auth-logo"><div style="font-family:'Noto Serif TC',serif;font-size:22px;font-weight:600;color:var(--gold);">🐰 Bunny Bliss</div></div>
+    <div class="auth-logo"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss" style="height:40px;"></div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">會員登入</button>
       <button class="auth-tab" id="tab-register" onclick="switchTab('register')">新會員註冊</button>
@@ -606,37 +606,11 @@ function closeCart(){document.getElementById('cart-drawer').classList.remove('op
 function openAuth(tab='login'){switchTab(tab);document.getElementById('auth-overlay').classList.add('active');document.body.style.overflow='hidden';}
 function closeAuthOverlay(){document.getElementById('auth-overlay').classList.remove('active');document.body.style.overflow='';}
 function switchTab(tab){document.getElementById('tab-login').classList.toggle('active',tab==='login');document.getElementById('tab-register').classList.toggle('active',tab==='register');document.getElementById('panel-login').classList.toggle('active',tab==='login');document.getElementById('panel-register').classList.toggle('active',tab==='register');}
-function doLogin(){
-  const email=document.getElementById('login-email').value.trim();
-  const pass=document.getElementById('login-pass').value;
-  if(!email||!pass){showToast('請填寫電子信箱與密碼');return;}
-  localStorage.setItem('bb_user',JSON.stringify({name:email.split('@')[0],email}));
-  updateAuthNav();closeAuthOverlay();showToast('登入成功！歡迎回來');
-  if(window._pendingCheckout){window._pendingCheckout=false;location.href='/checkout';}
-}
-function doRegister(){
-  const name=document.getElementById('reg-name').value.trim();
-  const email=document.getElementById('reg-email').value.trim();
-  const pass=document.getElementById('reg-pass').value;
-  if(!name||!email||!pass){showToast('請填寫所有欄位');return;}
-  localStorage.setItem('bb_user',JSON.stringify({name,email}));
-  updateAuthNav();closeAuthOverlay();showToast('註冊成功！歡迎加入 Bunny Bliss');
-  if(window._pendingCheckout){window._pendingCheckout=false;location.href='/checkout';}
-}
-function doLogout(){localStorage.removeItem('bb_user');updateAuthNav();showToast('已登出');}
-function updateAuthNav(){
-  const user=JSON.parse(localStorage.getItem('bb_user')||'null');
-  document.getElementById('nav-auth-guest').style.display=user?'none':'';
-  document.getElementById('nav-auth-user').style.display=user?'':'none';
-  document.getElementById('mob-auth-guest').style.display=user?'none':'';
-  document.getElementById('mob-auth-user').style.display=user?'':'none';
-  if(user){document.getElementById('nav-username').textContent=user.name;document.getElementById('mob-username').textContent=user.name;}
-}
 function goToCheckout(){
-  if(localStorage.getItem('bb_user')){location.href='/checkout';return;}
+  if(window._bbUser){location.href='/checkout';return;}
   window._pendingCheckout=true;openAuth('login');
 }
-updateAuthNav();
+window._closeAuthModal = () => closeAuthOverlay();
 
 function toggleMobileNav(){const open=document.getElementById('mob-drawer').classList.toggle('open');document.getElementById('mob-overlay').style.display=open?'block':'none';setTimeout(()=>document.getElementById('mob-overlay').classList.toggle('active',open),10);document.getElementById('hamburger').classList.toggle('open',open);document.body.style.overflow=open?'hidden':'';}
 function closeMobileNav(){document.getElementById('mob-drawer').classList.remove('open');document.getElementById('mob-overlay').classList.remove('active');document.getElementById('hamburger').classList.remove('open');setTimeout(()=>{document.getElementById('mob-overlay').style.display='none';},300);document.body.style.overflow='';}
@@ -672,5 +646,7 @@ function initSwipe() {
   updateCartBadge();
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/auth.js"></script>
 </body>
 </html>
