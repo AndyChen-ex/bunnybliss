@@ -611,6 +611,13 @@
             <tbody id="orders-tbody"></tbody>
           </table>
           <div class="table-empty" id="orders-empty" style="display:none"><p>尚無訂單</p></div>
+          <div id="orders-pagination" style="display:none;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--cream-dark)">
+            <span id="orders-page-info" style="font-size:13px;color:var(--brown-light)"></span>
+            <div style="display:flex;gap:8px">
+              <button id="orders-prev" class="btn-edit" onclick="goOrdersPage(-1)" style="padding:6px 14px">← 上頁</button>
+              <button id="orders-next" class="btn-edit" onclick="goOrdersPage(1)" style="padding:6px 14px">下頁 →</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1148,7 +1155,7 @@ function updateBadges() {
   document.getElementById('badge-categories').textContent = categories.length;
   document.getElementById('badge-products').textContent = products.filter(p=>p.active).length;
   document.getElementById('badge-addons').textContent = getAddons().filter(a=>a.active).length;
-  document.getElementById('badge-orders').textContent = (_ordersCache||[]).filter(o=>o.status==='待付款').length;
+  document.getElementById('badge-orders').textContent = _pendingTotal;
 }
 
 function renderCurrentPanel() {
@@ -1592,63 +1599,93 @@ function shipLabel(o) {
   const m = (o.shipping?.address || '').match(/：(.+?)（/);
   return `${brand}：${m ? m[1] : '取貨'}`;
 }
-let orderFilter = '全部';
-let _ordersCache = null; // 記憶體快取，避免重複 fetch
+let orderFilter = '待付款';
+let _ordersCache = null; // { orders, total, limit }
+let _pendingTotal = 0;   // badge 用
 
-function getOrders() { return _ordersCache || []; }
+function getOrders() { return _ordersCache?.orders || []; }
 
 async function loadOrdersFromDB() {
+  const params = new URLSearchParams();
+  if (orderFilter !== '全部') params.set('status', orderFilter);
   try {
-    const res = await fetch('/api/admin/orders', { headers: { 'x-admin-key': 'bunnybliss' } });
+    const res = await fetch(`/api/admin/orders?${params}`, { headers: { 'x-admin-key': 'bunnybliss' } });
     _ordersCache = await res.json();
+    if (orderFilter === '待付款') _pendingTotal = _ordersCache.total;
   } catch (e) {
     console.warn('[admin orders] 載入失敗', e);
-    _ordersCache = [];
+    _ordersCache = { orders: [], total: 0, limit: 100 };
   }
 }
 
 async function renderOrdersPanel() {
   if (!_ordersCache) await loadOrdersFromDB();
-  const all = getOrders();
-  const filterBar = document.getElementById('order-status-filter');
-  const counts = {};
-  all.forEach(o => { counts[o.status] = (counts[o.status]||0)+1; });
-  filterBar.innerHTML = ['全部',...ORDER_STATUSES].map(s => {
-    const n = s==='全部' ? all.length : (counts[s]||0);
-    return `<button class="filter-btn${orderFilter===s?' active':''}" onclick="setOrderFilter('${s}')">${s}${n?` (${n})`:''}</button>`;
-  }).join('');
+  const { orders, total, limit } = _ordersCache;
 
-  const orders = orderFilter==='全部' ? all : all.filter(o=>o.status===orderFilter);
-  document.getElementById('orders-count').textContent = `共 ${all.length} 筆訂單`;
+  // 篩選 tab
+  const filterBar = document.getElementById('order-status-filter');
+  filterBar.innerHTML = ['全部', ...ORDER_STATUSES].map(s =>
+    `<button class="filter-btn${orderFilter===s?' active':''}" onclick="setOrderFilter('${s}')">${s}</button>`
+  ).join('');
+
+  // 筆數
+  document.getElementById('orders-count').textContent = `共 ${total} 筆`;
+
+  // 表格
   const empty = document.getElementById('orders-empty');
   const tbody = document.getElementById('orders-tbody');
-  if (!orders.length) { tbody.innerHTML=''; empty.style.display=''; return; }
-  empty.style.display='none';
-  tbody.innerHTML = orders.map(o => {
-    const d = new Date(o.createdAt);
-    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    return `<tr>
-      <td style="font-size:12px;font-weight:700;color:var(--brown)">${esc(o.id)}</td>
-      <td style="font-size:12px;color:var(--brown-light)">${dateStr}</td>
-      <td><div style="font-weight:600;font-size:13px">${esc(o.customer?.name||'')}</div><div style="font-size:11px;color:var(--brown-light)">${esc(o.customer?.phone||'')}</div></td>
-      <td style="font-size:12px">${esc(shipLabel(o))}</td>
-      <td style="font-weight:700;color:var(--gold)">NT$${o.total}</td>
-      <td>
-        <select class="order-status-select" onchange="updateOrderStatus('${o.id}',this.value)">
-          ${ORDER_STATUSES.map(s=>`<option${s===o.status?' selected':''}>${s}</option>`).join('')}
-        </select>
-      </td>
-      <td><button class="btn-edit" onclick="openOrderModal('${o.id}')">詳情</button></td>
-    </tr>`;
-  }).join('');
+  if (!orders.length) { tbody.innerHTML = ''; empty.style.display = ''; }
+  else {
+    empty.style.display = 'none';
+    tbody.innerHTML = orders.map(o => {
+      const d = new Date(o.created_at || o.createdAt);
+      const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      return `<tr>
+        <td style="font-size:12px;font-weight:700;color:var(--brown)">${esc(o.id)}</td>
+        <td style="font-size:12px;color:var(--brown-light)">${dateStr}</td>
+        <td><div style="font-weight:600;font-size:13px">${esc(o.customer?.name||'')}</div><div style="font-size:11px;color:var(--brown-light)">${esc(o.customer?.phone||'')}</div></td>
+        <td style="font-size:12px">${esc(shipLabel(o))}</td>
+        <td style="font-weight:700;color:var(--gold)">NT$${o.total}</td>
+        <td>
+          <select class="order-status-select" onchange="updateOrderStatus('${o.id}',this.value)">
+            ${ORDER_STATUSES.map(s=>`<option${s===o.status?' selected':''}>${s}</option>`).join('')}
+          </select>
+        </td>
+        <td><button class="btn-edit" onclick="openOrderModal('${o.id}')">詳情</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // 若實際筆數超過 limit 提示
+  const pagination = document.getElementById('orders-pagination');
+  if (total > limit) {
+    pagination.style.display = 'flex';
+    document.getElementById('orders-page-info').textContent = `顯示最近 ${limit} 筆，共 ${total} 筆`;
+    document.getElementById('orders-prev').style.display = 'none';
+    document.getElementById('orders-next').style.display = 'none';
+  } else {
+    pagination.style.display = 'none';
+  }
 }
 
-function setOrderFilter(f) { orderFilter = f; renderOrdersPanel().catch(console.error); }
+function setOrderFilter(f) {
+  orderFilter = f;
+  _ordersCache = null; // 切換篩選時清快取
+  renderOrdersPanel().catch(console.error);
+}
 
 async function updateOrderStatus(id, status) {
-  // 更新快取
-  const i = (_ordersCache||[]).findIndex(o=>o.id===id);
-  if (i>=0) _ordersCache[i].status = status;
+  // 先在快取裡更新，讓 UI 立即反映
+  const orders = _ordersCache?.orders || [];
+  const i = orders.findIndex(o=>o.id===id);
+  if (i>=0) orders[i].status = status;
+  if (orderFilter !== '全部' && status !== orderFilter) {
+    // 狀態改變後該筆不再符合目前篩選，清快取讓下次重新載入
+    _ordersCache = null;
+  }
+  if (orderFilter === '待付款') {
+    _pendingTotal = orders.filter(o=>o.status==='待付款').length;
+  }
   updateBadges();
   // 寫入 DB
   try {
@@ -1668,7 +1705,7 @@ function openOrderModal(id) {
   if (!o) return;
   document.getElementById('order-modal-title').textContent = `訂單 ${o.id}`;
   const payLabel = o.payment?.method==='linepay'?'💚 LINE Pay':'🏦 銀行匯款';
-  const d = new Date(o.createdAt);
+  const d = new Date(o.created_at || o.createdAt);
   document.getElementById('order-modal-body').innerHTML = `
     <div class="order-detail-grid">
       <div class="order-detail-block"><h4>收件人</h4><p>${esc(o.customer?.name||'')}<br>${esc(o.customer?.phone||'')}${o.customer?.email?`<br>${esc(o.customer.email)}`:''}</p></div>

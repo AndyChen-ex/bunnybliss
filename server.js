@@ -96,14 +96,22 @@ app.get('/api/config', (req, res) => {
 });
 
 // POST /api/check-email — 檢查 email 是否已被註冊
+// 用 GoTrue REST API 直接以 email 查詢單筆，不拉全部用戶清單
 app.post('/api/check-email', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'email required' });
   try {
-    const { data, error } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    if (error) return res.status(500).json({ error: error.message });
-    const exists = data.users.some(u => u.email?.toLowerCase() === email.toLowerCase());
-    res.json({ exists });
+    const { data } = await axios.get(
+      `${process.env.SUPABASE_URL}/auth/v1/admin/users`,
+      {
+        params: { email, page: 1, per_page: 1 },
+        headers: {
+          apikey: process.env.SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+        },
+      }
+    );
+    res.json({ exists: (data?.users?.length || 0) > 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -173,21 +181,43 @@ app.post('/api/orders', async (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /api/orders — 取得會員自己的訂單
+// GET /api/orders — 取得會員自己的訂單（分頁，每頁 20 筆）
+// ?page=1&status=待付款
 app.get('/api/orders', async (req, res) => {
   const user = await verifyUser(req);
   if (!user) return res.status(401).json({ error: '未授權' });
-  const { data, error } = await supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = 20;
+  const from = (page - 1) * limit;
+
+  let q = supabase.from('orders').select('*', { count: 'exact' })
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .range(from, from + limit - 1);
+
+  if (req.query.status) q = q.eq('status', req.query.status);
+
+  const { data, count, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  res.json({ orders: data, total: count, page, limit });
 });
 
-// GET /api/admin/orders — 後台取得全部訂單（用 service key，不驗證 JWT）
+// GET /api/admin/orders — 後台取得最近 100 筆訂單（支援狀態篩選）
+// ?status=待付款
 app.get('/api/admin/orders', async (req, res) => {
   if (req.headers['x-admin-key'] !== 'bunnybliss') return res.status(403).json({ error: '無權限' });
-  const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+
+  const LIMIT = 100;
+  let q = supabase.from('orders').select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(0, LIMIT - 1);
+
+  if (req.query.status) q = q.eq('status', req.query.status);
+
+  const { data, count, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  res.json({ orders: data, total: count, limit: LIMIT });
 });
 
 // PATCH /api/admin/orders/:id — 後台更新訂單狀態

@@ -97,10 +97,8 @@ test.describe('訂單生命週期：下單 → 後台管理 → 完成', () => {
     await page.route('**/api/admin/orders**', async route => {
       const method = route.request().method();
       if (method === 'GET') {
-        const orders = capturedOrder
-          ? [{ ...capturedOrder, created_at: capturedOrder.createdAt }]
-          : [];
-        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(orders) });
+        const list = capturedOrder ? [{ ...capturedOrder, created_at: capturedOrder.createdAt }] : [];
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ orders: list, total: list.length, limit: 100 }) });
       } else if (method === 'PATCH') {
         const body = route.request().postDataJSON();
         if (capturedOrder) capturedOrder = { ...capturedOrder, status: body.status };
@@ -206,8 +204,11 @@ test.describe('訂單生命週期：下單 → 後台管理 → 完成', () => {
 
     // mock 後台訂單 API
     await page.route('**/api/admin/orders**', async route => {
+      const url = route.request().url();
+      const status = new URL(url).searchParams.get('status');
+      const filtered = status ? orders.filter(o => o.status === status) : orders;
       if (route.request().method() === 'GET') {
-        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(orders) });
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ orders: filtered, total: filtered.length, limit: 100 }) });
       } else if (route.request().method() === 'PATCH') {
         route.fulfill({ status: 200, body: '{"ok":true}' });
       } else { route.continue(); }
@@ -219,11 +220,60 @@ test.describe('訂單生命週期：下單 → 後台管理 → 完成', () => {
     await page.waitForSelector('#app.visible');
     await page.evaluate(() => switchPanel('orders'));
     await page.waitForSelector('#panel-orders', { state: 'visible' });
-    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.length > 0);
+    // 預設篩選「待付款」，只有 ORD-AAA 符合
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.includes('ORD-AAA'));
 
     await page.evaluate(() => setOrderFilter('已完成'));
     await expect(page.locator('#orders-tbody')).toContainText('ORD-BBB');
     await expect(page.locator('#orders-tbody')).not.toContainText('ORD-AAA');
+  });
+
+  test('[regression] 後台訂單日期正確顯示（不出現 NaN）', async ({ page }) => {
+    const orders = [
+      // DB 格式：created_at（snake_case）
+      { id: 'ORD-DATE-DB', created_at: '2025-06-01T10:30:00.000Z', status: '待付款',
+        customer: { name: 'A', phone: '0911', email: 'a@test.com' },
+        shipping: { method: 'home', address: '台北', fee: 60 },
+        payment: { method: 'transfer' }, items: [], subtotal: 100, total: 160 },
+      // 舊 localStorage 格式：createdAt（camelCase）相容性
+      { id: 'ORD-DATE-LOCAL', createdAt: '2025-06-02T14:00:00.000Z', status: '已完成',
+        customer: { name: 'B', phone: '0922', email: 'b@test.com' },
+        shipping: { method: 'home', address: '台中', fee: 60 },
+        payment: { method: 'transfer' }, items: [], subtotal: 200, total: 260 },
+    ];
+
+    await page.route('**/api/admin/orders**', route => {
+      if (route.request().method() === 'GET') {
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ orders, total: orders.length, limit: 100 }) });
+      } else { route.fulfill({ status: 200, body: '{"ok":true}' }); }
+    });
+
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' });
+    await page.fill('#login-pwd', ADMIN_PWD);
+    await page.click('button[onclick="doLogin()"]');
+    await page.waitForSelector('#app.visible');
+    await page.evaluate(() => switchPanel('orders'));
+    await page.waitForSelector('#panel-orders', { state: 'visible' });
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.length > 0);
+
+    // 預設篩選應為「待付款」
+    const activeFilter = await page.locator('.filter-btn.active').innerText();
+    expect(activeFilter).toContain('待付款');
+
+    // 切到「全部」以驗證兩種日期格式
+    await page.evaluate(() => setOrderFilter('全部'));
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.includes('ORD-DATE-DB'));
+
+    const tbodyText = await page.locator('#orders-tbody').innerText();
+
+    // 不得出現 NaN
+    expect(tbodyText).not.toContain('NaN');
+
+    // DB 格式：2025-06-01T10:30:00.000Z → 顯示 "6/1 HH:MM"
+    expect(tbodyText).toMatch(/6\/1\s+\d{2}:\d{2}/);
+
+    // 舊 camelCase 格式：2025-06-02T14:00:00.000Z → 顯示 "6/2 HH:MM"
+    expect(tbodyText).toMatch(/6\/2\s+\d{2}:\d{2}/);
   });
 
   test('[regression] 會員只看到自己的訂單', async ({ page }) => {
