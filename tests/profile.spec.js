@@ -29,7 +29,7 @@ const FAKE_SESSION = {
 function makeOrder(overrides = {}) {
   return {
     id: `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    createdAt: new Date().toISOString(),
+    created_at: new Date().toISOString(),
     status: '待付款',
     customer: { name: '測試會員', phone: '0912345678', email: TEST_USER.email },
     shipping: { method: 'home', address: '台北市中山區測試路1號', fee: 60 },
@@ -51,30 +51,45 @@ async function injectSession(page, user = TEST_USER) {
 
   await page.route('**/auth/v1/**', route => {
     const url = route.request().url();
-    // updateUser endpoint — 回傳更新後的 user
     if (url.includes('/user') && route.request().method() === 'PUT') {
       const body = route.request().postDataJSON?.() || {};
       route.fulfill({
-        status: 200,
-        contentType: 'application/json',
+        status: 200, contentType: 'application/json',
         body: JSON.stringify({ ...user, user_metadata: { ...user.user_metadata, ...body.data } }),
       });
     } else if (url.includes('/logout')) {
       route.fulfill({ status: 204, body: '' });
     } else {
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(session),
-      });
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(session) });
+    }
+  });
+
+  // 預設 mock：profile 無資料、orders 空陣列
+  await page.route('**/api/profile', route => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+    } else {
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+    }
+  });
+  await page.route('**/api/orders', route => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    } else {
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
     }
   });
 }
 
-async function injectOrders(page, orders) {
-  await page.addInitScript((orders) => {
-    localStorage.setItem('bb_orders', JSON.stringify(orders));
-  }, orders);
+// 覆寫 /api/orders GET 回傳指定訂單（需在 injectSession 之後呼叫，後加的 route 優先）
+async function mockOrders(page, orders) {
+  await page.route('**/api/orders', route => {
+    if (route.request().method() === 'GET') {
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(orders) });
+    } else {
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+    }
+  });
 }
 
 async function waitForLogin(page) {
@@ -84,6 +99,14 @@ async function waitForLogin(page) {
 async function gotoProfile(page) {
   await page.goto('/profile', { waitUntil: 'domcontentloaded' });
   await waitForLogin(page);
+  // 等訂單區塊完成渲染（不再顯示「載入中…」）
+  await page.waitForFunction(
+    () => {
+      const w = document.getElementById('orders-wrap');
+      return w && !w.textContent.includes('載入中');
+    },
+    { timeout: 8000 }
+  );
 }
 
 async function getToast(page) {
@@ -151,29 +174,26 @@ test.describe('會員中心 — Auth 狀態', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 2. 儲存姓名
+// 2. 儲存個人資料
 // ═════════════════════════════════════════════════════════════════════════════
 
-test.describe('會員中心 — 儲存姓名', () => {
+test.describe('會員中心 — 儲存個人資料', () => {
 
   test('[regression] 合法姓名 → 呼叫 updateUser、toast 成功', async ({ page }) => {
     let updateCalled = false;
     await injectSession(page);
-    // 覆寫 PUT /user mock 以記錄呼叫
     await page.route('**/auth/v1/user', route => {
       if (route.request().method() === 'PUT') {
         updateCalled = true;
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_USER) });
-      } else {
-        route.continue();
-      }
+      } else { route.continue(); }
     });
     await gotoProfile(page);
 
     await page.fill('#profile-name', '新姓名');
-    await page.click('#btn-save-name');
+    await page.click('#btn-save-profile');
 
-    expect(await getToast(page)).toBe('姓名已更新！');
+    expect(await getToast(page)).toBe('資料已更新！');
     expect(updateCalled).toBe(true);
   });
 
@@ -187,7 +207,7 @@ test.describe('會員中心 — 儲存姓名', () => {
     await gotoProfile(page);
 
     await page.fill('#profile-name', '');
-    await page.click('#btn-save-name');
+    await page.click('#btn-save-profile');
 
     expect(await getToast(page)).toBe('請填寫姓名');
     expect(updateCalled).toBe(false);
@@ -195,46 +215,35 @@ test.describe('會員中心 — 儲存姓名', () => {
 
   test('[edge] 儲存中 → 按鈕 disabled 且文字改為「儲存中…」', async ({ page }) => {
     await injectSession(page);
-    // 讓 API 回應延遲，方便檢查 loading 狀態
     await page.route('**/auth/v1/user', async route => {
       if (route.request().method() === 'PUT') {
         await new Promise(r => setTimeout(r, 300));
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_USER) });
-      } else {
-        route.continue();
-      }
+      } else { route.continue(); }
     });
     await gotoProfile(page);
 
     await page.fill('#profile-name', '測試');
-    await page.click('#btn-save-name');
+    await page.click('#btn-save-profile');
 
-    // 在 API 回來前檢查按鈕狀態
-    await expect(page.locator('#btn-save-name')).toBeDisabled();
-    await expect(page.locator('#btn-save-name')).toHaveText('儲存中…');
-    // 等 toast 出現後按鈕恢復
+    await expect(page.locator('#btn-save-profile')).toBeDisabled();
+    await expect(page.locator('#btn-save-profile')).toHaveText('儲存中…');
     await getToast(page);
-    await expect(page.locator('#btn-save-name')).not.toBeDisabled();
-    await expect(page.locator('#btn-save-name')).toHaveText('儲存姓名');
+    await expect(page.locator('#btn-save-profile')).not.toBeDisabled();
+    await expect(page.locator('#btn-save-profile')).toHaveText('儲存資料');
   });
 
   test('[edge] API 回傳錯誤 → toast 顯示錯誤訊息', async ({ page }) => {
     await injectSession(page);
     await page.route('**/auth/v1/user', route => {
       if (route.request().method() === 'PUT') {
-        route.fulfill({
-          status: 400,
-          contentType: 'application/json',
-          body: JSON.stringify({ message: '更新失敗' }),
-        });
-      } else {
-        route.continue();
-      }
+        route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: '更新失敗' }) });
+      } else { route.continue(); }
     });
     await gotoProfile(page);
 
     await page.fill('#profile-name', '測試名稱');
-    await page.click('#btn-save-name');
+    await page.click('#btn-save-profile');
 
     const toast = await getToast(page);
     expect(toast).toContain('儲存失敗');
@@ -275,31 +284,27 @@ test.describe('會員中心 — 訂單列表', () => {
   test('[regression] 有訂單 → 顯示訂單卡片', async ({ page }) => {
     const order = makeOrder({ id: 'ORD-TEST-001' });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
     await expect(page.locator('.order-item')).toHaveCount(1);
     await expect(page.locator('#orders-wrap')).toContainText('ORD-TEST-001');
   });
 
-  test('[regression] 只顯示自己的訂單（email 隔離）', async ({ page }) => {
-    const myOrder = makeOrder({ id: 'MY-001' });
-    const otherOrder = makeOrder({ id: 'OTHER-001', customer: { name: '他人', phone: '0900', email: 'other@test.com' } });
+  test('[regression] 只顯示自己的訂單（API 已過濾，驗證數量）', async ({ page }) => {
+    const myOrders = [makeOrder({ id: 'MY-001' }), makeOrder({ id: 'MY-002' })];
     await injectSession(page);
-    await injectOrders(page, [myOrder, otherOrder]);
+    await mockOrders(page, myOrders); // API 只回傳自己的訂單
     await gotoProfile(page);
 
-    await expect(page.locator('#orders-wrap')).toContainText('MY-001');
-    await expect(page.locator('#orders-wrap')).not.toContainText('OTHER-001');
+    await expect(page.locator('.order-item')).toHaveCount(2);
+    await expect(page.locator('#orders-wrap')).not.toContainText('OTHER');
   });
 
-  test('[regression] 多筆訂單依時間排列顯示', async ({ page }) => {
-    const orders = [
-      makeOrder({ id: 'ORD-A', createdAt: new Date(2024, 0, 1).toISOString() }),
-      makeOrder({ id: 'ORD-B', createdAt: new Date(2024, 5, 1).toISOString() }),
-    ];
+  test('[regression] 多筆訂單顯示', async ({ page }) => {
+    const orders = [makeOrder({ id: 'ORD-A' }), makeOrder({ id: 'ORD-B' })];
     await injectSession(page);
-    await injectOrders(page, orders);
+    await mockOrders(page, orders);
     await gotoProfile(page);
 
     await expect(page.locator('.order-item')).toHaveCount(2);
@@ -308,7 +313,7 @@ test.describe('會員中心 — 訂單列表', () => {
   test('[regression] 訂單卡片顯示狀態徽章', async ({ page }) => {
     const order = makeOrder({ id: 'ORD-STATUS', status: '待付款' });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
     const badge = page.locator('.status-badge');
@@ -319,7 +324,7 @@ test.describe('會員中心 — 訂單列表', () => {
   test('[regression] 訂單卡片顯示金額', async ({ page }) => {
     const order = makeOrder({ id: 'ORD-AMT', total: 460 });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
     await expect(page.locator('.order-total-head')).toHaveText('NT$460');
@@ -337,8 +342,7 @@ test.describe('會員中心 — 訂單篩選', () => {
     await injectSession(page);
     await gotoProfile(page);
 
-    const activeChip = page.locator('.filter-chip.active');
-    await expect(activeChip).toHaveText('全部');
+    await expect(page.locator('.filter-chip.active')).toHaveText('全部');
   });
 
   test('[regression] 篩選特定狀態 → 只顯示該狀態的訂單', async ({ page }) => {
@@ -347,7 +351,7 @@ test.describe('會員中心 — 訂單篩選', () => {
       makeOrder({ id: 'ORD-DONE', status: '已完成' }),
     ];
     await injectSession(page);
-    await injectOrders(page, orders);
+    await mockOrders(page, orders);
     await gotoProfile(page);
 
     await page.click('.filter-chip[data-status="已完成"]');
@@ -367,7 +371,7 @@ test.describe('會員中心 — 訂單篩選', () => {
   test('[regression] 篩選無符合 → 顯示「沒有「X」的訂單」', async ({ page }) => {
     const order = makeOrder({ status: '待付款' });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
     await page.click('.filter-chip[data-status="已完成"]');
@@ -380,7 +384,7 @@ test.describe('會員中心 — 訂單篩選', () => {
       makeOrder({ id: 'ORD-2', status: '已完成' }),
     ];
     await injectSession(page);
-    await injectOrders(page, orders);
+    await mockOrders(page, orders);
     await gotoProfile(page);
 
     await page.click('.filter-chip[data-status="已完成"]');
@@ -401,12 +405,10 @@ test.describe('會員中心 — 訂單展開收合', () => {
   test('[regression] 點擊訂單標頭 → 展開顯示明細', async ({ page }) => {
     const order = makeOrder({ id: 'ORD-EXPAND' });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
-    // 展開前 order-body 是 hidden（CSS display:none）
     await expect(page.locator('.order-body')).toBeHidden();
-
     await page.click('.order-head');
     await expect(page.locator('#order-ORD-EXPAND')).toHaveClass(/open/);
     await expect(page.locator('.order-body')).toBeVisible();
@@ -415,7 +417,7 @@ test.describe('會員中心 — 訂單展開收合', () => {
   test('[regression] 展開後再點 → 收合', async ({ page }) => {
     const order = makeOrder({ id: 'ORD-COLLAPSE' });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
     await page.click('.order-head');
@@ -430,11 +432,10 @@ test.describe('會員中心 — 訂單展開收合', () => {
     const order = makeOrder({
       id: 'ORD-DETAIL',
       items: [{ id: 'p1', name: '手工餅乾', price: 200, qty: 3, image: '' }],
-      subtotal: 600,
-      total: 660,
+      subtotal: 600, total: 660,
     });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
     await page.click('.order-head');
@@ -445,18 +446,13 @@ test.describe('會員中心 — 訂單展開收合', () => {
   });
 
   test('[edge] 多筆訂單各自獨立展開', async ({ page }) => {
-    const orders = [
-      makeOrder({ id: 'ORD-X1' }),
-      makeOrder({ id: 'ORD-X2' }),
-    ];
+    const orders = [makeOrder({ id: 'ORD-X1' }), makeOrder({ id: 'ORD-X2' })];
     await injectSession(page);
-    await injectOrders(page, orders);
+    await mockOrders(page, orders);
     await gotoProfile(page);
 
-    // 展開第一筆
     await page.locator('.order-head').first().click();
     await expect(page.locator('#order-ORD-X1')).toHaveClass(/open/);
-    // 第二筆不受影響
     await expect(page.locator('#order-ORD-X2')).not.toHaveClass(/open/);
   });
 
@@ -475,7 +471,7 @@ test.describe('會員中心 — 行動版', () => {
     await expect(page.locator('#main-wrap')).toBeVisible();
   });
 
-  test('[mobile] 儲存姓名 → 成功', async ({ page }) => {
+  test('[mobile] 儲存資料 → 成功', async ({ page }) => {
     await injectSession(page);
     await page.route('**/auth/v1/user', route => {
       if (route.request().method() === 'PUT') {
@@ -485,14 +481,14 @@ test.describe('會員中心 — 行動版', () => {
     await gotoProfile(page);
 
     await page.fill('#profile-name', '行動會員');
-    await page.click('#btn-save-name');
-    expect(await getToast(page)).toBe('姓名已更新！');
+    await page.click('#btn-save-profile');
+    expect(await getToast(page)).toBe('資料已更新！');
   });
 
   test('[mobile] 篩選 chip 正常操作', async ({ page }) => {
     const order = makeOrder({ status: '待付款' });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
     await page.click('.filter-chip[data-status="待付款"]');
@@ -503,7 +499,7 @@ test.describe('會員中心 — 行動版', () => {
   test('[mobile] 訂單展開收合正常', async ({ page }) => {
     const order = makeOrder({ id: 'ORD-M1' });
     await injectSession(page);
-    await injectOrders(page, [order]);
+    await mockOrders(page, [order]);
     await gotoProfile(page);
 
     await page.click('.order-head');

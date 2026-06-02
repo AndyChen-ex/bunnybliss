@@ -183,8 +183,12 @@
       <span class="profile-label">姓名</span>
       <input class="profile-input" id="profile-name" type="text" placeholder="請輸入姓名" maxlength="20">
     </div>
+    <div class="profile-row">
+      <span class="profile-label">電話</span>
+      <input class="profile-input" id="profile-phone" type="tel" placeholder="請輸入手機號碼">
+    </div>
     <div class="profile-actions">
-      <button class="btn-save" id="btn-save-name" onclick="saveName()">儲存姓名</button>
+      <button class="btn-save" id="btn-save-profile" onclick="saveProfile()">儲存資料</button>
       <button class="btn-logout" onclick="logout()">登出</button>
     </div>
   </div>
@@ -216,13 +220,15 @@ let currentUser = null;
 let orderFilter = '全部';
 
 // auth.js 初始化後呼叫
-window._onAuthChange = function(user) {
+window._onAuthChange = async function(user) {
   if (user) {
     currentUser = user;
     document.getElementById('guest-gate').classList.remove('show');
     document.getElementById('main-wrap').style.display = '';
     document.getElementById('profile-email').value = user.email || '';
     document.getElementById('profile-name').value = user.user_metadata?.name || '';
+    // 從 DB 載入完整 profile（含電話）
+    await loadProfile();
     renderOrders();
   } else {
     currentUser = null;
@@ -231,18 +237,46 @@ window._onAuthChange = function(user) {
   }
 };
 
-// ── 儲存姓名 ────────────────────────────────────────────────────────────────
-async function saveName() {
+// ── 取得 auth token ──────────────────────────────────────────────────────────
+async function getToken() {
+  const { data: { session } } = await window._sb.auth.getSession();
+  return session?.access_token || '';
+}
+
+// ── 載入 profile（含電話）────────────────────────────────────────────────────
+async function loadProfile() {
+  try {
+    const token = await getToken();
+    if (!token) return;
+    const data = await fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+    if (data) {
+      if (data.name) document.getElementById('profile-name').value = data.name;
+      if (data.phone) document.getElementById('profile-phone').value = data.phone;
+    }
+  } catch (e) { console.warn('[profile] 載入失敗', e); }
+}
+
+// ── 儲存個人資料 ──────────────────────────────────────────────────────────────
+async function saveProfile() {
   const name = document.getElementById('profile-name').value.trim();
+  const phone = document.getElementById('profile-phone').value.trim();
   if (!name) { showToast('請填寫姓名'); return; }
-  const btn = document.getElementById('btn-save-name');
+  const btn = document.getElementById('btn-save-profile');
   btn.disabled = true; btn.textContent = '儲存中…';
   try {
-    const { error } = await window._sb.auth.updateUser({ data: { name } });
-    if (error) { showToast('儲存失敗：' + error.message); return; }
-    showToast('姓名已更新！');
+    const token = await getToken();
+    // 同步更新 Supabase Auth metadata
+    const { error: authErr } = await window._sb.auth.updateUser({ data: { name } });
+    if (authErr) { showToast('儲存失敗：' + authErr.message); return; }
+    // 更新 profiles 表
+    await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name, phone }),
+    });
+    showToast('資料已更新！');
   } finally {
-    btn.disabled = false; btn.textContent = '儲存姓名';
+    btn.disabled = false; btn.textContent = '儲存資料';
   }
 }
 
@@ -257,7 +291,7 @@ function switchOrderFilter(el) {
   document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   orderFilter = el.dataset.status;
-  renderOrders();
+  renderOrders(); // async，fire-and-forget 可接受
 }
 
 // ── 展開/收合訂單 ──────────────────────────────────────────────────────────────
@@ -266,13 +300,28 @@ function toggleOrder(id) {
 }
 
 // ── 渲染訂單列表 ──────────────────────────────────────────────────────────────
-function renderOrders() {
+let _ordersCache = null;
+
+async function renderOrders() {
   if (!currentUser) return;
-  const all = JSON.parse(localStorage.getItem('bb_orders') || '[]')
-    .filter(o => o.customer?.email?.toLowerCase() === currentUser.email.toLowerCase());
+  const wrap = document.getElementById('orders-wrap');
+  wrap.innerHTML = '<p style="color:var(--brown-light);font-size:13px;padding:8px 0">載入中…</p>';
+
+  try {
+    if (!_ordersCache) {
+      const token = await getToken();
+      const data = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+      _ordersCache = Array.isArray(data) ? data : [];
+    }
+  } catch (e) {
+    console.warn('[orders] 載入失敗', e);
+    _ordersCache = [];
+  }
+
+  // 統一欄位名稱（DB 用 created_at，localStorage 用 createdAt）
+  const all = _ordersCache.map(o => ({ ...o, createdAt: o.created_at || o.createdAt }));
   const list = orderFilter === '全部' ? all : all.filter(o => o.status === orderFilter);
 
-  const wrap = document.getElementById('orders-wrap');
   if (!list.length) {
     wrap.innerHTML = `
       <div class="order-empty">
@@ -281,7 +330,6 @@ function renderOrders() {
       </div>`;
     return;
   }
-
   wrap.innerHTML = list.map(o => orderCard(o)).join('');
 }
 

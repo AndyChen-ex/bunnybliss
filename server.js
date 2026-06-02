@@ -79,6 +79,14 @@ async function fetchFromEcpay(cvsType) {
   return data;
 }
 
+// 從 Authorization header 驗證 JWT 並回傳 user
+async function verifyUser(req) {
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  if (!token) return null;
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  return error ? null : user;
+}
+
 // GET /api/config — 回傳前端需要的公開設定
 app.get('/api/config', (req, res) => {
   res.json({
@@ -99,6 +107,96 @@ app.post('/api/check-email', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── Profile API ──────────────────────────────────────────────────────────────
+
+// GET /api/profile
+app.get('/api/profile', async (req, res) => {
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: '未授權' });
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  if (error && error.code === 'PGRST116') return res.json(null);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// POST /api/profile — 建立或更新會員資料
+app.post('/api/profile', async (req, res) => {
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: '未授權' });
+  const { name, phone } = req.body;
+  const { error } = await supabase.from('profiles').upsert({
+    id: user.id,
+    email: user.email,
+    name: name ?? user.user_metadata?.name ?? '',
+    phone: phone ?? '',
+    updated_at: new Date().toISOString(),
+  });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// PATCH /api/profile
+app.patch('/api/profile', async (req, res) => {
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: '未授權' });
+  const updates = { updated_at: new Date().toISOString() };
+  if (req.body.name !== undefined) updates.name = req.body.name;
+  if (req.body.phone !== undefined) updates.phone = req.body.phone;
+  const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// ── Orders API ────────────────────────────────────────────────────────────────
+
+// POST /api/orders — 會員建立訂單
+app.post('/api/orders', async (req, res) => {
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: '未授權' });
+  const o = req.body;
+  const { error } = await supabase.from('orders').insert({
+    id: o.id,
+    user_id: user.id,
+    user_email: user.email,
+    status: o.status || '待付款',
+    customer: o.customer,
+    shipping: o.shipping,
+    payment: o.payment,
+    items: o.items,
+    subtotal: o.subtotal,
+    total: o.total,
+    created_at: o.createdAt || new Date().toISOString(),
+  });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// GET /api/orders — 取得會員自己的訂單
+app.get('/api/orders', async (req, res) => {
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: '未授權' });
+  const { data, error } = await supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// GET /api/admin/orders — 後台取得全部訂單（用 service key，不驗證 JWT）
+app.get('/api/admin/orders', async (req, res) => {
+  if (req.headers['x-admin-key'] !== 'bunnybliss') return res.status(403).json({ error: '無權限' });
+  const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// PATCH /api/admin/orders/:id — 後台更新訂單狀態
+app.patch('/api/admin/orders/:id', async (req, res) => {
+  if (req.headers['x-admin-key'] !== 'bunnybliss') return res.status(403).json({ error: '無權限' });
+  const { status } = req.body;
+  const { error } = await supabase.from('orders').update({ status }).eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
 });
 
 // GET /api/cvs-stores?type=FAMI|UNIMART|HILIFE|OKMART|All

@@ -67,6 +67,12 @@ async function doRegister() {
     if (error) { showToast('註冊失敗：' + error.message); return; }
     if (typeof window._closeAuthModal === 'function') window._closeAuthModal();
     if (data.session) {
+      // 建立 profile 記錄（fire-and-forget）
+      fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.session.access_token}` },
+        body: JSON.stringify({ name }),
+      }).catch(() => {});
       showToast('註冊成功！歡迎加入 Bliss');
       if (window._pendingCheckout) { window._pendingCheckout = false; location.href = '/checkout'; }
     } else {

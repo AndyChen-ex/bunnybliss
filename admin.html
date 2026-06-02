@@ -1108,15 +1108,18 @@ function openAddModal() {
 
 async function initFromServer() {
   const keys = ['products', 'banners', 'categories', 'addons', 'settings'];
-  await Promise.all(keys.map(async key => {
-    try {
-      const r = await fetch(`/api/store/${key}`);
-      const data = await r.json();
-      if (data !== null) localStorage.setItem(`bb_${key}`, JSON.stringify(data));
-    } catch (e) {
-      console.warn('[Supabase] 載入失敗，使用本地快取', key, e);
-    }
-  }));
+  await Promise.all([
+    ...keys.map(async key => {
+      try {
+        const r = await fetch(`/api/store/${key}`);
+        const data = await r.json();
+        if (data !== null) localStorage.setItem(`bb_${key}`, JSON.stringify(data));
+      } catch (e) {
+        console.warn('[Supabase] 載入失敗，使用本地快取', key, e);
+      }
+    }),
+    loadOrdersFromDB(),
+  ]);
 }
 
 async function syncToServer(key, data) {
@@ -1145,7 +1148,7 @@ function updateBadges() {
   document.getElementById('badge-categories').textContent = categories.length;
   document.getElementById('badge-products').textContent = products.filter(p=>p.active).length;
   document.getElementById('badge-addons').textContent = getAddons().filter(a=>a.active).length;
-  document.getElementById('badge-orders').textContent = getOrders().filter(o=>o.status==='待付款').length;
+  document.getElementById('badge-orders').textContent = (_ordersCache||[]).filter(o=>o.status==='待付款').length;
 }
 
 function renderCurrentPanel() {
@@ -1590,11 +1593,22 @@ function shipLabel(o) {
   return `${brand}：${m ? m[1] : '取貨'}`;
 }
 let orderFilter = '全部';
+let _ordersCache = null; // 記憶體快取，避免重複 fetch
 
-function getOrders() { return JSON.parse(localStorage.getItem('bb_orders')||'[]'); }
-function saveOrders(o) { localStorage.setItem('bb_orders', JSON.stringify(o)); }
+function getOrders() { return _ordersCache || []; }
 
-function renderOrdersPanel() {
+async function loadOrdersFromDB() {
+  try {
+    const res = await fetch('/api/admin/orders', { headers: { 'x-admin-key': 'bunnybliss' } });
+    _ordersCache = await res.json();
+  } catch (e) {
+    console.warn('[admin orders] 載入失敗', e);
+    _ordersCache = [];
+  }
+}
+
+async function renderOrdersPanel() {
+  if (!_ordersCache) await loadOrdersFromDB();
   const all = getOrders();
   const filterBar = document.getElementById('order-status-filter');
   const counts = {};
@@ -1629,14 +1643,24 @@ function renderOrdersPanel() {
   }).join('');
 }
 
-function setOrderFilter(f) { orderFilter = f; renderOrdersPanel(); }
+function setOrderFilter(f) { orderFilter = f; renderOrdersPanel().catch(console.error); }
 
-function updateOrderStatus(id, status) {
-  const orders = getOrders();
-  const i = orders.findIndex(o=>o.id===id);
-  if (i>=0) orders[i].status = status;
-  saveOrders(orders);
+async function updateOrderStatus(id, status) {
+  // 更新快取
+  const i = (_ordersCache||[]).findIndex(o=>o.id===id);
+  if (i>=0) _ordersCache[i].status = status;
   updateBadges();
+  // 寫入 DB
+  try {
+    await fetch(`/api/admin/orders/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': 'bunnybliss' },
+      body: JSON.stringify({ status }),
+    });
+  } catch (e) {
+    console.warn('[admin orders] 狀態更新失敗', e);
+    showToast('狀態儲存失敗，請重試');
+  }
 }
 
 function openOrderModal(id) {

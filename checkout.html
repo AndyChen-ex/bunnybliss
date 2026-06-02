@@ -562,7 +562,7 @@ function generateOrderId() {
   return `BB-${date}-${String(Math.floor(Math.random()*9000)+1000)}`;
 }
 
-function submitOrder() {
+async function submitOrder() {
   const name = document.getElementById('c-name').value.trim();
   const phone = document.getElementById('c-phone').value.trim();
   const email = document.getElementById('c-email').value.trim();
@@ -611,10 +611,24 @@ function submitOrder() {
     total: total()
   };
 
-  const orders = getOrders();
-  orders.unshift(order);
-  saveOrders(orders);
   localStorage.removeItem('bb_cart');
+
+  // 寫入 DB
+  try {
+    const { data: { session } } = await window._sb.auth.getSession();
+    if (session?.access_token) {
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify(order),
+      });
+    }
+  } catch (e) {
+    console.warn('[orders] DB 寫入失敗，降回 localStorage', e);
+    const orders = getOrders();
+    orders.unshift(order);
+    saveOrders(orders);
+  }
 
   showConfirm(order);
 }
