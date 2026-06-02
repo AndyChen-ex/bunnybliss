@@ -270,7 +270,7 @@ async function saveProfile() {
     if (authErr) { showToast('儲存失敗：' + authErr.message); return; }
     // 更新 profiles 表
     await fetch('/api/profile', {
-      method: 'PATCH',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name, phone }),
     });
