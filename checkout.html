@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/dtszpqdqo/image/upload/w_32,h_32,c_fit/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>結帳 | Bunny Bliss</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -249,6 +250,12 @@ async function gateRegister() {
   const pass = document.getElementById('gate-reg-pass').value;
   if (!name || !email || !pass) { showToast('請填寫所有欄位'); return; }
   if (pass.length < 6) { showToast('密碼至少需要 6 個字元'); return; }
+  const { exists } = await fetch('/api/check-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }).then(r => r.json());
+  if (exists) { showToast('此 Email 已註冊，請直接登入'); return; }
   const { data, error } = await window._sb.auth.signUp({ email, password: pass, options: { data: { name } } });
   if (error) { showToast('註冊失敗：' + error.message); return; }
   if (data.session) {

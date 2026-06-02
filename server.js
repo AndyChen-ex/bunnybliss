@@ -87,6 +87,20 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+// POST /api/check-email — 檢查 email 是否已被註冊
+app.post('/api/check-email', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'email required' });
+  try {
+    const { data, error } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    if (error) return res.status(500).json({ error: error.message });
+    const exists = data.users.some(u => u.email?.toLowerCase() === email.toLowerCase());
+    res.json({ exists });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/cvs-stores?type=FAMI|UNIMART|HILIFE|OKMART|All
 app.get('/api/cvs-stores', async (req, res) => {
   const cvsType = req.query.type || 'All';

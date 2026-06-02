@@ -1,6 +1,10 @@
 // Shared Supabase Auth — included in all pages after supabase CDN script
 (async function () {
   const cfg = await fetch('/api/config').then(r => r.json());
+  if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+    console.error('[auth] 缺少 SUPABASE_URL 或 SUPABASE_ANON_KEY，請檢查 .env');
+    return;
+  }
   window._sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
   window._bbUser = null;
 
@@ -28,7 +32,7 @@ async function doLogin() {
   const pass = document.getElementById('login-pass').value;
   if (!email || !pass) { showToast('請填寫電子信箱與密碼'); return; }
   const { error } = await window._sb.auth.signInWithPassword({ email, password: pass });
-  if (error) { showToast('登入失敗：電子信箱或密碼錯誤'); return; }
+  if (error) { showToast('電子信箱或密碼錯誤，或 Email 尚未驗證'); return; }
   if (typeof window._closeAuthModal === 'function') window._closeAuthModal();
   showToast('登入成功！歡迎回來');
   if (window._pendingCheckout) { window._pendingCheckout = false; location.href = '/checkout'; }
@@ -42,6 +46,12 @@ async function doRegister() {
   const pass2El = document.getElementById('reg-pass2');
   if (pass2El && pass !== pass2El.value) { showToast('兩次密碼不一致'); return; }
   if (pass.length < 6) { showToast('密碼至少需要 6 個字元'); return; }
+  const { exists } = await fetch('/api/check-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }).then(r => r.json());
+  if (exists) { showToast('此 Email 已註冊，請直接登入'); return; }
   const { data, error } = await window._sb.auth.signUp({ email, password: pass, options: { data: { name } } });
   if (error) { showToast('註冊失敗：' + error.message); return; }
   if (typeof window._closeAuthModal === 'function') window._closeAuthModal();

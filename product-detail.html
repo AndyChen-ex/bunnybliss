@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/dtszpqdqo/image/upload/w_32,h_32,c_fit/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>商品詳情 | Bunny Bliss</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -239,7 +240,8 @@
     .modal-overlay { position: fixed; inset: 0; background: rgba(61,43,31,0.55); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
     .modal-overlay.active { opacity: 1; pointer-events: all; }
     .modal { background: var(--white); border-radius: 24px; padding: 32px 28px; width: 100%; max-width: 380px; position: relative; }
-    .auth-logo { text-align: center; margin-bottom: 20px; }
+    .auth-logo { text-align: center; margin-bottom: 8px; }
+    .auth-logo img { height: 160px; }
     .auth-tabs { display: flex; border-bottom: 2px solid var(--cream-dark); margin-bottom: 20px; }
     .auth-tab { flex: 1; background: none; border: none; padding: 10px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--brown-light); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
     .auth-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
@@ -368,7 +370,7 @@
 <div class="modal-overlay" id="auth-overlay" onclick="closeAuthOverlay()">
   <div class="modal" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeAuthOverlay()" style="position:absolute;top:16px;right:16px">✕</button>
-    <div class="auth-logo"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss" style="height:40px;"></div>
+    <div class="auth-logo"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bunny Bliss" style="height:160px;"></div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">會員登入</button>
       <button class="auth-tab" id="tab-register" onclick="switchTab('register')">新會員註冊</button>
