@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/dtszpqdqo/image/upload/w_32,h_32,c_fit/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會員中心 | Bliss 布妮絲菓子工房</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #fdf8f3; --cream-dark: #f5ece1;
+      --gold: #c9956b; --gold-dark: #a97848; --gold-light: #e8c4a0;
+      --brown: #3d2b1f; --brown-mid: #7a5c4f; --brown-light: #b08878;
+      --white: #ffffff;
+      --shadow: 0 4px 20px rgba(61,43,31,0.08);
+      --radius: 16px; --radius-sm: 8px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: var(--cream); color: var(--brown); min-height: 100vh; }
+
+    /* ── Header ── */
+    header { background: rgba(253,248,243,0.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--cream-dark); position: sticky; top: 0; z-index: 10; }
+    .header-inner { max-width: 900px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; gap: 16px; }
+    .logo { text-decoration: none; flex-shrink: 0; }
+    .logo img { height: 44px; }
+    .page-title { flex: 1; text-align: center; font-family: 'Noto Serif TC', serif; font-size: 17px; font-weight: 600; }
+    .btn-back { background: none; border: none; cursor: pointer; color: var(--brown-mid); font-size: 14px; font-family: inherit; padding: 6px 0; white-space: nowrap; text-decoration: none; }
+
+    /* ── Layout ── */
+    .wrap { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Card ── */
+    .card { background: var(--white); border-radius: var(--radius); padding: 24px 28px; box-shadow: var(--shadow); }
+    .card-title { font-family: 'Noto Serif TC', serif; font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .card-icon { font-size: 18px; }
+
+    /* ── Profile Form ── */
+    .profile-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .profile-label { font-size: 13px; font-weight: 700; color: var(--brown-mid); width: 60px; flex-shrink: 0; letter-spacing: 0.3px; }
+    .profile-value { font-size: 15px; color: var(--brown); }
+    .profile-input {
+      flex: 1; padding: 10px 14px; border: 1.5px solid var(--cream-dark);
+      border-radius: var(--radius-sm); font-family: inherit; font-size: 15px;
+      color: var(--brown); background: var(--white); outline: none; transition: border-color 0.2s;
+    }
+    .profile-input:focus { border-color: var(--gold); }
+    .profile-input[readonly] { background: var(--cream); color: var(--brown-mid); cursor: default; }
+    .btn-save {
+      margin-top: 4px; padding: 10px 28px; background: var(--gold); color: var(--white);
+      border: none; border-radius: 50px; font-family: inherit; font-size: 14px;
+      font-weight: 700; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-save:hover { background: var(--gold-dark); }
+    .btn-save:disabled { background: var(--gold-light); cursor: default; }
+    .btn-logout {
+      margin-top: 4px; padding: 10px 24px; background: none; color: var(--brown-light);
+      border: 1.5px solid var(--cream-dark); border-radius: 50px; font-family: inherit;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--brown-light); color: var(--brown-mid); }
+    .profile-actions { display: flex; gap: 12px; margin-top: 8px; }
+
+    /* ── Orders ── */
+    .order-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .filter-chip {
+      padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600;
+      border: 1.5px solid var(--cream-dark); background: var(--white); color: var(--brown-mid);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .filter-chip.active { background: var(--gold); border-color: var(--gold); color: var(--white); }
+    .filter-chip:hover:not(.active) { border-color: var(--gold-light); color: var(--brown); }
+
+    .order-empty { text-align: center; padding: 48px 0; color: var(--brown-light); }
+    .order-empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .order-empty p { font-size: 14px; }
+
+    .order-item {
+      border: 1.5px solid var(--cream-dark); border-radius: 12px;
+      margin-bottom: 12px; overflow: hidden; transition: box-shadow 0.2s;
+    }
+    .order-item:last-child { margin-bottom: 0; }
+    .order-item:hover { box-shadow: 0 4px 16px rgba(61,43,31,0.1); }
+    .order-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; background: var(--cream); cursor: pointer; gap: 12px;
+    }
+    .order-id { font-size: 13px; font-weight: 700; color: var(--brown); font-family: monospace; }
+    .order-date { font-size: 12px; color: var(--brown-light); margin-top: 2px; }
+    .order-head-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .order-total-head { font-size: 14px; font-weight: 700; color: var(--gold); }
+    .status-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px; white-space: nowrap;
+    }
+    .status-待付款  { background: #fff3e0; color: #e65100; }
+    .status-已付款  { background: #e8f5e9; color: #2e7d32; }
+    .status-備貨中  { background: #e3f2fd; color: #1565c0; }
+    .status-已出貨  { background: #f3e5f5; color: #6a1b9a; }
+    .status-已完成  { background: #e8f5e9; color: #1b5e20; }
+    .status-已取消  { background: #fafafa; color: #757575; }
+    .order-chevron { font-size: 12px; color: var(--brown-light); transition: transform 0.2s; }
+    .order-item.open .order-chevron { transform: rotate(180deg); }
+
+    .order-body { display: none; padding: 16px 18px; border-top: 1px solid var(--cream-dark); }
+    .order-item.open .order-body { display: block; }
+
+    .order-section-title { font-size: 12px; font-weight: 700; color: var(--brown-light); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; margin-top: 14px; }
+    .order-section-title:first-child { margin-top: 0; }
+    .order-info-row { display: flex; gap: 8px; font-size: 13px; margin-bottom: 4px; }
+    .order-info-label { color: var(--brown-light); width: 56px; flex-shrink: 0; }
+    .order-info-value { color: var(--brown); }
+
+    .order-items-list { display: flex; flex-direction: column; gap: 8px; }
+    .oi { display: flex; align-items: center; gap: 12px; }
+    .oi img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--cream-dark); flex-shrink: 0; }
+    .oi-name { font-size: 13px; font-weight: 600; flex: 1; }
+    .oi-qty { font-size: 12px; color: var(--brown-light); }
+    .oi-price { font-size: 13px; font-weight: 700; color: var(--gold); }
+
+    .order-totals { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+    .otr { display: flex; justify-content: space-between; font-size: 13px; color: var(--brown-mid); }
+    .otr.total { font-size: 15px; font-weight: 700; color: var(--brown); border-top: 1px solid var(--cream-dark); padding-top: 8px; margin-top: 4px; }
+    .otr.total .amt { color: var(--gold); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--brown); color: var(--white); padding: 12px 24px;
+      border-radius: 50px; font-size: 14px; font-weight: 500; z-index: 9999;
+      transition: transform 0.3s; white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Guest gate ── */
+    #guest-gate {
+      display: none; position: fixed; inset: 0; background: var(--cream);
+      z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+    }
+    #guest-gate.show { display: flex; }
+    #guest-gate img { height: 80px; margin-bottom: 8px; }
+    #guest-gate p { font-size: 15px; color: var(--brown-mid); }
+    #guest-gate a { padding: 12px 32px; background: var(--gold); color: var(--white); border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 15px; }
+
+    @media (max-width: 600px) {
+      .wrap { padding: 20px 16px 80px; }
+      .card { padding: 20px 18px; }
+      .profile-row { flex-wrap: wrap; gap: 8px; }
+      .profile-label { width: 100%; }
+      .profile-actions { flex-direction: column; }
+      .btn-save, .btn-logout { width: 100%; text-align: center; }
+      .order-head { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="logo" href="/"><img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bliss 布妮絲菓子工房"></a>
+    <div class="page-title">會員中心</div>
+    <a class="btn-back" href="/">← 回首頁</a>
+  </div>
+</header>
+
+<!-- 未登入遮罩 -->
+<div id="guest-gate">
+  <img src="https://res.cloudinary.com/dtszpqdqo/image/upload/f_auto,q_auto/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2" alt="Bliss">
+  <p>請先登入才能查看會員中心</p>
+  <a href="/">前往登入</a>
+</div>
+
+<div class="wrap" id="main-wrap" style="display:none">
+
+  <!-- 個人資料 -->
+  <div class="card">
+    <div class="card-title"><span class="card-icon">👤</span> 個人資料</div>
+
+    <div class="profile-row">
+      <span class="profile-label">電子信箱</span>
+      <input class="profile-input" id="profile-email" type="email" readonly>
+    </div>
+    <div class="profile-row">
+      <span class="profile-label">姓名</span>
+      <input class="profile-input" id="profile-name" type="text" placeholder="請輸入姓名" maxlength="20">
+    </div>
+    <div class="profile-actions">
+      <button class="btn-save" id="btn-save-name" onclick="saveName()">儲存姓名</button>
+      <button class="btn-logout" onclick="logout()">登出</button>
+    </div>
+  </div>
+
+  <!-- 訂單記錄 -->
+  <div class="card">
+    <div class="card-title"><span class="card-icon">📦</span> 我的訂單</div>
+
+    <div class="order-filter" id="order-filter">
+      <button class="filter-chip active" data-status="全部" onclick="switchOrderFilter(this)">全部</button>
+      <button class="filter-chip" data-status="待付款" onclick="switchOrderFilter(this)">待付款</button>
+      <button class="filter-chip" data-status="已付款" onclick="switchOrderFilter(this)">已付款</button>
+      <button class="filter-chip" data-status="備貨中" onclick="switchOrderFilter(this)">備貨中</button>
+      <button class="filter-chip" data-status="已出貨" onclick="switchOrderFilter(this)">已出貨</button>
+      <button class="filter-chip" data-status="已完成" onclick="switchOrderFilter(this)">已完成</button>
+    </div>
+
+    <div id="orders-wrap"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/auth.js"></script>
+<script>
+let currentUser = null;
+let orderFilter = '全部';
+
+// auth.js 初始化後呼叫
+window._onAuthChange = function(user) {
+  if (user) {
+    currentUser = user;
+    document.getElementById('guest-gate').classList.remove('show');
+    document.getElementById('main-wrap').style.display = '';
+    document.getElementById('profile-email').value = user.email || '';
+    document.getElementById('profile-name').value = user.user_metadata?.name || '';
+    renderOrders();
+  } else {
+    currentUser = null;
+    document.getElementById('guest-gate').classList.add('show');
+    document.getElementById('main-wrap').style.display = 'none';
+  }
+};
+
+// ── 儲存姓名 ────────────────────────────────────────────────────────────────
+async function saveName() {
+  const name = document.getElementById('profile-name').value.trim();
+  if (!name) { showToast('請填寫姓名'); return; }
+  const btn = document.getElementById('btn-save-name');
+  btn.disabled = true; btn.textContent = '儲存中…';
+  try {
+    const { error } = await window._sb.auth.updateUser({ data: { name } });
+    if (error) { showToast('儲存失敗：' + error.message); return; }
+    showToast('姓名已更新！');
+  } finally {
+    btn.disabled = false; btn.textContent = '儲存姓名';
+  }
+}
+
+// ── 登出 ─────────────────────────────────────────────────────────────────────
+async function logout() {
+  await window._sb.auth.signOut();
+  location.href = '/';
+}
+
+// ── 訂單篩選 ─────────────────────────────────────────────────────────────────
+function switchOrderFilter(el) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  orderFilter = el.dataset.status;
+  renderOrders();
+}
+
+// ── 展開/收合訂單 ──────────────────────────────────────────────────────────────
+function toggleOrder(id) {
+  document.getElementById('order-' + id)?.classList.toggle('open');
+}
+
+// ── 渲染訂單列表 ──────────────────────────────────────────────────────────────
+function renderOrders() {
+  if (!currentUser) return;
+  const all = JSON.parse(localStorage.getItem('bb_orders') || '[]')
+    .filter(o => o.customer?.email?.toLowerCase() === currentUser.email.toLowerCase());
+  const list = orderFilter === '全部' ? all : all.filter(o => o.status === orderFilter);
+
+  const wrap = document.getElementById('orders-wrap');
+  if (!list.length) {
+    wrap.innerHTML = `
+      <div class="order-empty">
+        <div class="order-empty-icon">🛍️</div>
+        <p>${orderFilter === '全部' ? '尚無訂單記錄' : `沒有「${orderFilter}」的訂單`}</p>
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = list.map(o => orderCard(o)).join('');
+}
+
+function orderCard(o) {
+  const date = new Date(o.createdAt).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const shippingLabel = o.shipping?.method === 'cvs' ? '超商取貨' : '宅配到府';
+  const paymentLabel = { credit: '信用卡', transfer: 'ATM 轉帳', cod: '貨到付款' }[o.payment?.method] || o.payment?.method || '—';
+  const statusClass = 'status-' + (o.status || '待付款');
+
+  const itemsHtml = (o.items || []).map(item => `
+    <div class="oi">
+      <img src="${esc(item.image || '')}" alt="${esc(item.name)}" onerror="this.src=''">
+      <span class="oi-name">${esc(item.name)}${item.addonName ? ` <span style="font-weight:400;color:var(--brown-light)">+ ${esc(item.addonName)}</span>` : ''}</span>
+      <span class="oi-qty">× ${item.qty}</span>
+      <span class="oi-price">NT$${((item.price + (item.addonPrice || 0)) * item.qty).toLocaleString()}</span>
+    </div>`).join('');
+
+  return `
+    <div class="order-item" id="order-${esc(o.id)}">
+      <div class="order-head" onclick="toggleOrder('${esc(o.id)}')">
+        <div>
+          <div class="order-id">#${esc(o.id)}</div>
+          <div class="order-date">${date}</div>
+        </div>
+        <div class="order-head-right">
+          <span class="status-badge ${statusClass}">${esc(o.status || '待付款')}</span>
+          <span class="order-total-head">NT$${(o.total || 0).toLocaleString()}</span>
+          <span class="order-chevron">▼</span>
+        </div>
+      </div>
+      <div class="order-body">
+        <div class="order-section-title">商品明細</div>
+        <div class="order-items-list">${itemsHtml}</div>
+
+        <div class="order-section-title">配送與付款</div>
+        <div class="order-info-row"><span class="order-info-label">配送</span><span class="order-info-value">${shippingLabel}</span></div>
+        <div class="order-info-row"><span class="order-info-label">地址</span><span class="order-info-value">${esc(o.shipping?.address || '—')}</span></div>
+        <div class="order-info-row"><span class="order-info-label">付款</span><span class="order-info-value">${paymentLabel}</span></div>
+
+        <div class="order-section-title">金額</div>
+        <div class="order-totals">
+          <div class="otr"><span>商品小計</span><span>NT$${(o.subtotal || 0).toLocaleString()}</span></div>
+          <div class="otr"><span>運費</span><span>NT$${(o.shipping?.fee || 0).toLocaleString()}</span></div>
+          <div class="otr total"><span>總計</span><span class="amt">NT$${(o.total || 0).toLocaleString()}</span></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+let _toastT;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
