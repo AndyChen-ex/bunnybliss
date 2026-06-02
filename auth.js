@@ -49,9 +49,11 @@ async function doLogin() {
 async function doRegister() {
   if (_authLoading) return;
   const name = document.getElementById('reg-name').value.trim();
+  const phoneEl = document.getElementById('reg-phone');
+  const phone = phoneEl ? phoneEl.value.trim() : '';
   const email = document.getElementById('reg-email').value.trim();
   const pass = document.getElementById('reg-pass').value;
-  if (!name || !email || !pass) { showToast('請填寫所有欄位'); return; }
+  if (!name || !phone || !email || !pass) { showToast('請填寫所有欄位'); return; }
   const pass2El = document.getElementById('reg-pass2');
   if (pass2El && pass !== pass2El.value) { showToast('兩次密碼不一致'); return; }
   if (pass.length < 6) { showToast('密碼至少需要 6 個字元'); return; }
@@ -63,7 +65,7 @@ async function doRegister() {
       body: JSON.stringify({ email }),
     }).then(r => r.json());
     if (exists) { showToast('此 Email 已註冊，請直接登入'); return; }
-    const { data, error } = await window._sb.auth.signUp({ email, password: pass, options: { data: { name } } });
+    const { data, error } = await window._sb.auth.signUp({ email, password: pass, options: { data: { name, phone } } });
     if (error) { showToast('註冊失敗：' + error.message); return; }
     if (typeof window._closeAuthModal === 'function') window._closeAuthModal();
     if (data.session) {
@@ -71,7 +73,7 @@ async function doRegister() {
       fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.session.access_token}` },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, phone }),
       }).catch(() => {});
       showToast('註冊成功！歡迎加入 Bliss');
       if (window._pendingCheckout) { window._pendingCheckout = false; location.href = '/checkout'; }

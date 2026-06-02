@@ -278,6 +278,7 @@ test.describe('註冊', () => {
     await openAuthModal(page, 'register');
 
     await page.fill('#reg-name', '新用戶');
+    await page.fill('#reg-phone', '0912345678');
     await page.fill('#reg-email', 'newuser@test.com');
     await page.fill('#reg-pass', 'password123');
     const pass2 = page.locator('#reg-pass2');
@@ -294,6 +295,7 @@ test.describe('註冊', () => {
     await openAuthModal(page, 'register');
 
     await page.fill('#reg-name', FIXED_USER.name);
+    await page.fill('#reg-phone', '0912345678');
     await page.fill('#reg-email', FIXED_USER.email);
     await page.fill('#reg-pass', 'anypassword');
     const pass2 = page.locator('#reg-pass2');
@@ -321,6 +323,7 @@ test.describe('註冊', () => {
     await openAuthModal(page, 'register');
 
     await page.fill('#reg-name', '測試');
+    await page.fill('#reg-phone', '0912345678');
     await page.fill('#reg-email', 'test@test.com');
     await page.fill('#reg-pass', '123');
     const pass2 = page.locator('#reg-pass2');
@@ -336,6 +339,7 @@ test.describe('註冊', () => {
     if (await pass2.count() === 0) { test.skip(); return; }
 
     await page.fill('#reg-name', '測試');
+    await page.fill('#reg-phone', '0912345678');
     await page.fill('#reg-email', 'test@test.com');
     await page.fill('#reg-pass', 'password123');
     await pass2.fill('different999');

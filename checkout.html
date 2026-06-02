@@ -68,6 +68,12 @@
     .sum-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; color: var(--brown); }
     .sum-total .amt { color: var(--gold); }
 
+    .autofill-row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+      font-size: 13px; font-weight: 600; color: var(--brown-mid);
+      cursor: pointer; user-select: none;
+    }
+    .autofill-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--gold); cursor: pointer; }
     .btn-submit { width: 100%; background: var(--gold); color: var(--white); border: none; padding: 15px; border-radius: 13px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 14px; }
     .btn-submit:hover { background: var(--gold-dark); }
 
@@ -179,6 +185,7 @@
     </div>
     <div class="gate-panel" id="gate-panel-register">
       <div class="gate-fg"><label>姓名</label><input id="gate-reg-name" type="text" placeholder="請輸入真實姓名"></div>
+      <div class="gate-fg"><label>手機號碼</label><input id="gate-reg-phone" type="tel" placeholder="0912345678" maxlength="20"></div>
       <div class="gate-fg"><label>電子信箱</label><input id="gate-reg-email" type="email" placeholder="請輸入電子信箱"></div>
       <div class="gate-fg"><label>密碼</label><input id="gate-reg-pass" type="password" placeholder="至少 8 個字元"></div>
       <button class="gate-btn" onclick="gateRegister()">立即註冊</button>
@@ -246,9 +253,10 @@ async function gateLogin() {
 }
 async function gateRegister() {
   const name = document.getElementById('gate-reg-name').value.trim();
+  const phone = document.getElementById('gate-reg-phone').value.trim();
   const email = document.getElementById('gate-reg-email').value.trim();
   const pass = document.getElementById('gate-reg-pass').value;
-  if (!name || !email || !pass) { showToast('請填寫所有欄位'); return; }
+  if (!name || !phone || !email || !pass) { showToast('請填寫所有欄位'); return; }
   if (pass.length < 6) { showToast('密碼至少需要 6 個字元'); return; }
   const { exists } = await fetch('/api/check-email', {
     method: 'POST',
@@ -256,9 +264,14 @@ async function gateRegister() {
     body: JSON.stringify({ email }),
   }).then(r => r.json());
   if (exists) { showToast('此 Email 已註冊，請直接登入'); return; }
-  const { data, error } = await window._sb.auth.signUp({ email, password: pass, options: { data: { name } } });
+  const { data, error } = await window._sb.auth.signUp({ email, password: pass, options: { data: { name, phone } } });
   if (error) { showToast('註冊失敗：' + error.message); return; }
   if (data.session) {
+    fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+      body: JSON.stringify({ name, phone }),
+    }).catch(() => {});
     document.getElementById('auth-gate').classList.remove('show');
     document.body.style.overflow = '';
     showToast('註冊成功！歡迎加入 Bliss');
@@ -276,12 +289,58 @@ function showToast(msg) {
 }
 document.getElementById('auth-gate').classList.add('show');
 document.body.style.overflow = 'hidden';
+// ── End auth gate ─────────────────────────────────────────────────────
+
+// ── 自動填入會員資料 ──────────────────────────────────────────────────────────
+async function initAutofill() {
+  if (!window._bbUser) return;
+  // 顯示自動填入選項
+  const row = document.getElementById('autofill-row');
+  if (row) row.style.display = 'flex';
+}
+
+async function toggleAutofill(checked) {
+  if (!checked) {
+    document.getElementById('c-name').value = '';
+    document.getElementById('c-phone').value = '';
+    document.getElementById('c-email').value = '';
+    return;
+  }
+  const user = window._bbUser;
+  if (!user) return;
+
+  // 先從 user_metadata 填入（立即）
+  document.getElementById('c-name').value  = user.user_metadata?.name  || '';
+  document.getElementById('c-email').value = user.email || '';
+
+  // 電話：優先 user_metadata，再 fetch profile
+  let phone = user.user_metadata?.phone || '';
+  if (!phone && window._sb) {
+    try {
+      const { data: { session } } = await window._sb.auth.getSession();
+      if (session?.access_token) {
+        const profile = await fetch('/api/profile', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }).then(r => r.json());
+        phone = profile?.phone || '';
+      }
+    } catch (e) {}
+  }
+  document.getElementById('c-phone').value = phone;
+}
+
+// auth.js 初始化後呼叫
 window._onAuthChange = (user) => {
   const gate = document.getElementById('auth-gate');
-  if (user) { gate.classList.remove('show'); document.body.style.overflow = ''; }
-  else { gate.classList.add('show'); document.body.style.overflow = 'hidden'; }
+  if (user) {
+    gate.classList.remove('show');
+    document.body.style.overflow = '';
+    initAutofill();
+  } else {
+    gate.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
 };
-// ── End auth gate ─────────────────────────────────────────────────────
 
 const SHIPPING_FEE = 60;
 let cart = JSON.parse(localStorage.getItem('bb_cart') || '[]');
@@ -438,6 +497,10 @@ function render() {
         <!-- Step 1 -->
         <div class="card">
           <div class="card-title"><span class="step-num">1</span>收件人資訊</div>
+          <label class="autofill-row" id="autofill-row" style="display:none">
+            <input type="checkbox" id="autofill-cb" onchange="toggleAutofill(this.checked)">
+            <span>使用會員資料自動填入</span>
+          </label>
           <div class="fg-row">
             <div class="fg"><label>姓名 *</label><input id="c-name" placeholder="收件人姓名" maxlength="20"></div>
             <div class="fg"><label>電話 *</label><input id="c-phone" type="tel" placeholder="0912345678" maxlength="20"></div>
