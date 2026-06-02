@@ -269,11 +269,11 @@ test.describe('訂單生命週期：下單 → 後台管理 → 完成', () => {
     // 不得出現 NaN
     expect(tbodyText).not.toContain('NaN');
 
-    // DB 格式：2025-06-01T10:30:00.000Z → 顯示 "6/1 HH:MM"
-    expect(tbodyText).toMatch(/6\/1\s+\d{2}:\d{2}/);
+    // DB 格式：2025-06-01T10:30:00.000Z → 顯示 "2025/6/1 HH:MM"
+    expect(tbodyText).toMatch(/2025\/6\/1\s+\d{2}:\d{2}/);
 
-    // 舊 camelCase 格式：2025-06-02T14:00:00.000Z → 顯示 "6/2 HH:MM"
-    expect(tbodyText).toMatch(/6\/2\s+\d{2}:\d{2}/);
+    // 舊 camelCase 格式：2025-06-02T14:00:00.000Z → 顯示 "2025/6/2 HH:MM"
+    expect(tbodyText).toMatch(/2025\/6\/2\s+\d{2}:\d{2}/);
   });
 
   test('[regression] 會員只看到自己的訂單', async ({ page }) => {

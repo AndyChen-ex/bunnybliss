@@ -1639,7 +1639,7 @@ async function renderOrdersPanel() {
     empty.style.display = 'none';
     tbody.innerHTML = orders.map(o => {
       const d = new Date(o.created_at || o.createdAt);
-      const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       return `<tr>
         <td style="font-size:12px;font-weight:700;color:var(--brown)">${esc(o.id)}</td>
         <td style="font-size:12px;color:var(--brown-light)">${dateStr}</td>
