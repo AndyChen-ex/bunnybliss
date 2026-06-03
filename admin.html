@@ -1651,7 +1651,10 @@ async function renderOrdersPanel() {
             ${ORDER_STATUSES.map(s=>`<option${s===o.status?' selected':''}>${s}</option>`).join('')}
           </select>
         </td>
-        <td><button class="btn-edit" onclick="openOrderModal('${o.id}')">詳情</button></td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn-edit" onclick="openOrderModal('${o.id}')">詳情</button>
+          ${o.payment?.ecpay_trade_no ? `<button class="btn-edit" style="background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7" onclick="verifyEcpayPayment('${o.id}')">驗證付款</button>` : ''}
+        </td>
       </tr>`;
     }).join('');
   }
@@ -1697,6 +1700,34 @@ async function updateOrderStatus(id, status) {
   } catch (e) {
     console.warn('[admin orders] 狀態更新失敗', e);
     showToast('狀態儲存失敗，請重試');
+  }
+}
+
+async function verifyEcpayPayment(orderId) {
+  showToast('查詢中…');
+  try {
+    const res = await fetch(`/api/admin/ecpay/query/${orderId}`, {
+      headers: { 'x-admin-key': 'bunnybliss' },
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(`查詢失敗：${data.error}`); return; }
+
+    if (data.isPaid) {
+      showToast(data.autoUpdated ? '✅ 已付款！狀態已自動更新為「已付款」' : '✅ 綠界確認已付款');
+      if (data.autoUpdated) {
+        // 更新本地快取
+        const orders = _ordersCache?.orders || [];
+        const i = orders.findIndex(o => o.id === orderId);
+        if (i >= 0) orders[i].status = '已付款';
+        _pendingTotal = orders.filter(o => o.status === '待付款').length;
+        updateBadges();
+        renderOrdersPanel().catch(console.error);
+      }
+    } else {
+      showToast('❌ 綠界確認尚未付款（TradeStatus=' + data.tradeStatus + '）');
+    }
+  } catch (e) {
+    showToast('查詢失敗，請稍後再試');
   }
 }
 

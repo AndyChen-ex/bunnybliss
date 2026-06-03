@@ -128,10 +128,12 @@ test.describe('訂單生命週期：下單 → 後台管理 → 完成', () => {
     await page.fill('#c-email', TEST_USER.email);
     await page.locator('input[name=shipping][value=home]').check();
     await page.waitForSelector('#home-city', { state: 'visible' });
-    await page.selectOption('#home-city', '台北市');
-    await page.fill('#home-district', '中山區');
+    await page.selectOption('#home-city', '臺北市'); // JSON 使用臺（不是台）
+    await page.waitForFunction(() => document.getElementById('home-district')?.options.length > 1);
+    await page.locator('#home-district').selectOption({ index: 1 }); // 選第一個鄉鎮
     await page.fill('#home-addr', '測試路 1 號');
-    await page.locator('input[name=payment]').first().check();
+    // 選銀行匯款（避免信用卡跳轉 ECPay 外部網址）
+    await page.locator('input[name=payment][value=transfer]').check();
 
     // ── Step 2: 送出訂單 ─────────────────────────────────────────────────────
     await page.click('button[onclick="submitOrder()"]');

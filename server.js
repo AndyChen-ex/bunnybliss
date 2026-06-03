@@ -87,6 +87,112 @@ async function verifyUser(req) {
   return error ? null : user;
 }
 
+// ── ECPay AIO 金流（信用卡）────────────────────────────────────────────────
+
+// MerchantTradeDate 必須是台灣時間 yyyy/MM/dd HH:mm:ss
+function getMerchantTradeDate() {
+  return new Date().toLocaleString('sv-SE', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).replace(/-/g, '/');
+}
+
+// CheckMacValue SHA256（AIO 金流專用，與物流 MD5 分開）
+function generatePaymentCMV(params) {
+  const hashKey = process.env.ECPAY_PAYMENT_HASH_KEY;
+  const hashIV = process.env.ECPAY_PAYMENT_HASH_IV;
+  const filtered = Object.fromEntries(Object.entries(params).filter(([k]) => k !== 'CheckMacValue'));
+  const sorted = Object.keys(filtered).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  const raw = `HashKey=${hashKey}&${sorted.map(k => `${k}=${filtered[k]}`).join('&')}&HashIV=${hashIV}`;
+  return crypto.createHash('sha256').update(ecpayUrlEncode(raw), 'utf8').digest('hex').toUpperCase();
+}
+
+// timing-safe CheckMacValue 驗證（SKILL.md AI 注意事項：禁止用 ==）
+function verifyPaymentCMV(params) {
+  const received = (params.CheckMacValue || '').toUpperCase();
+  const { CheckMacValue: _, ...rest } = params;
+  const expected = generatePaymentCMV(rest);
+  const bufA = Buffer.from(expected);
+  const bufB = Buffer.from(received);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// POST /api/ecpay/credit — 產生 AIO 自動提交表單，導向綠界信用卡付款頁
+app.post('/api/ecpay/credit', async (req, res) => {
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: '未授權' });
+
+  const { orderId, totalAmount, itemName } = req.body;
+  if (!orderId || !totalAmount || !itemName) return res.status(400).json({ error: '缺少必要參數' });
+
+  // MerchantTradeNo：最長 20 字元，僅英數字，永久唯一
+  const tradeNo = `BB${Math.floor(Date.now() / 1000)}${String(Math.floor(Math.random() * 99999)).padStart(5, '0')}`.slice(0, 20);
+
+  const siteUrl = process.env.SITE_URL || 'https://bunnybliss.onrender.com';
+  const params = {
+    MerchantID:        process.env.ECPAY_PAYMENT_MERCHANT_ID,
+    MerchantTradeNo:   tradeNo,
+    MerchantTradeDate: getMerchantTradeDate(),
+    PaymentType:       'aio',
+    TotalAmount:       totalAmount,
+    TradeDesc:         'Bliss布妮絲菓子工房',
+    // ItemName 過濾系統關鍵字（SKILL.md 注意事項）；超過 200 字截斷
+    ItemName:          itemName.replace(/[<>&"']/g, '').slice(0, 200) || '甜點商品',
+    ReturnURL:         `${siteUrl}/api/ecpay/notify`,
+    ChoosePayment:     'Credit',
+    EncryptType:       1,
+    ClientBackURL:     `${siteUrl}/`,
+    CustomField1:      orderId, // 對應回內部訂單 ID
+  };
+  params.CheckMacValue = generatePaymentCMV(params);
+
+  // 同步記錄 ECPay 交易編號到訂單（方便對帳）
+  await supabase.from('orders')
+    .update({ payment: { method: 'credit', ecpay_trade_no: tradeNo } })
+    .eq('id', orderId)
+    .catch(() => {});
+
+  const actionUrl = process.env.ECPAY_PAYMENT_URL || 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5';
+  const inputs = Object.entries(params)
+    .map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, '&quot;')}">`)
+    .join('\n');
+
+  // 回傳自動提交表單（瀏覽器 document.write 後即跳轉）
+  res.send(`<!DOCTYPE html><html><body>
+<form id="f" action="${actionUrl}" method="POST">${inputs}</form>
+<script>document.getElementById('f').submit();</script>
+</body></html>`);
+});
+
+// POST /api/ecpay/notify — ReturnURL，接收綠界付款結果通知（Server-to-Server）
+// ⚠️ 必須在 10 秒內回應純文字 1|OK；僅支援 port 80/443
+app.post('/api/ecpay/notify', express.urlencoded({ extended: false }), async (req, res) => {
+  // AIO Callback 是 Form POST，RtnCode 為字串
+  if (!verifyPaymentCMV(req.body)) {
+    console.error('[ECPay notify] CheckMacValue 驗證失敗', req.body.MerchantTradeNo);
+    return res.status(200).type('text/plain').send('1|OK'); // 仍須回 1|OK 避免重試
+  }
+
+  const { RtnCode, SimulatePaid, CustomField1: orderId, TradeAmt } = req.body;
+
+  if (String(RtnCode) === '1' && String(SimulatePaid) !== '1' && orderId) {
+    // 驗證金額一致性，防止竄改
+    const { data: order } = await supabase.from('orders').select('total').eq('id', orderId).single();
+    if (order && parseInt(TradeAmt) !== order.total) {
+      console.error(`[ECPay notify] 金額不符！ECPay=${TradeAmt} DB=${order.total} 訂單=${orderId}`);
+      return res.status(200).type('text/plain').send('1|OK'); // 仍須回 1|OK，但不更新狀態
+    }
+    // 金額一致，更新訂單狀態
+    await supabase.from('orders').update({ status: '已付款' }).eq('id', orderId)
+      .then(({ error }) => { if (error) console.error('[ECPay notify] 更新訂單失敗', error.message); });
+  }
+
+  // ⚠️ 必須回純文字 1|OK，HTTP 200
+  res.status(200).type('text/plain').send('1|OK');
+});
+
 // GET /api/config — 回傳前端需要的公開設定
 app.get('/api/config', (req, res) => {
   res.json({
@@ -227,6 +333,73 @@ app.patch('/api/admin/orders/:id', async (req, res) => {
   const { error } = await supabase.from('orders').update({ status }).eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
+});
+
+// GET /api/admin/ecpay/query/:orderId — 後台主動查詢 ECPay 付款狀態
+// 用於 ReturnURL callback 漏失時人工補確認
+app.get('/api/admin/ecpay/query/:orderId', async (req, res) => {
+  if (req.headers['x-admin-key'] !== 'bunnybliss') return res.status(403).json({ error: '無權限' });
+
+  const { data: order, error: fetchErr } = await supabase
+    .from('orders').select('*').eq('id', req.params.orderId).single();
+  if (fetchErr || !order) return res.status(404).json({ error: '訂單不存在' });
+
+  const tradeNo = order.payment?.ecpay_trade_no;
+  if (!tradeNo) return res.status(400).json({ error: '此訂單無 ECPay 交易編號（非信用卡付款）' });
+
+  // 從 ECPAY_PAYMENT_URL 推導 QueryTradeInfo URL
+  const base = (process.env.ECPAY_PAYMENT_URL || 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5')
+    .replace('/Cashier/AioCheckOut/V5', '');
+  const queryUrl = `${base}/Cashier/QueryTradeInfo/V5`;
+
+  const params = {
+    MerchantID:      process.env.ECPAY_PAYMENT_MERCHANT_ID,
+    MerchantTradeNo: tradeNo,
+    TimeStamp:       Math.floor(Date.now() / 1000), // ⚠️ Unix 秒，非毫秒
+  };
+  params.CheckMacValue = generatePaymentCMV(params);
+
+  try {
+    const body = new URLSearchParams(params).toString();
+    const { data: rawResp } = await axios.post(queryUrl, body, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      timeout: 10000,
+    });
+
+    // 回應為 URL-encoded 字串，驗證 CheckMacValue
+    const result = Object.fromEntries(new URLSearchParams(rawResp));
+    if (!verifyPaymentCMV(result)) {
+      return res.status(500).json({ error: '綠界回應 CheckMacValue 驗證失敗' });
+    }
+
+    const isPaid = result.TradeStatus === '1';
+
+    // 驗證金額一致性
+    const amountMatch = parseInt(result.TradeAmt) === order.total;
+    if (isPaid && !amountMatch) {
+      console.error(`[ECPay query] 金額不符！ECPay=${result.TradeAmt} DB=${order.total} 訂單=${req.params.orderId}`);
+      return res.status(400).json({ error: `金額不符：綠界 NT$${result.TradeAmt}，訂單 NT$${order.total}` });
+    }
+
+    // 若已付款且金額一致但訂單狀態尚未更新（callback 漏失），自動補更新
+    const shouldUpdate = isPaid && amountMatch && order.status === '待付款';
+    if (shouldUpdate) {
+      await supabase.from('orders').update({ status: '已付款' }).eq('id', req.params.orderId);
+    }
+
+    res.json({
+      isPaid,
+      amountMatch,
+      tradeAmt: result.TradeAmt,
+      tradeStatus: result.TradeStatus,
+      paymentType: result.PaymentType || '',
+      paymentDate: result.PaymentDate || '',
+      autoUpdated: shouldUpdate,
+    });
+  } catch (err) {
+    console.error('[ECPay query]', err.message);
+    res.status(502).json({ error: '無法聯繫綠界，請稍後再試' });
+  }
 });
 
 // GET /api/cvs-stores?type=FAMI|UNIMART|HILIFE|OKMART|All
