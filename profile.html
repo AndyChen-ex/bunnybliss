@@ -311,7 +311,8 @@ async function renderOrders() {
     if (!_ordersCache) {
       const token = await getToken();
       const data = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
-      _ordersCache = Array.isArray(data) ? data : [];
+      // API 回傳 { orders, total, limit } 分頁格式；兼容舊版純陣列格式
+      _ordersCache = Array.isArray(data) ? data : (data.orders || []);
     }
   } catch (e) {
     console.warn('[orders] 載入失敗', e);

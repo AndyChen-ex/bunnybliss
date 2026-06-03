@@ -121,49 +121,70 @@ function verifyPaymentCMV(params) {
 
 // POST /api/ecpay/credit — 產生 AIO 自動提交表單，導向綠界信用卡付款頁
 app.post('/api/ecpay/credit', async (req, res) => {
-  const user = await verifyUser(req);
-  if (!user) return res.status(401).json({ error: '未授權' });
+  try {
+    const user = await verifyUser(req);
+    if (!user) return res.status(401).json({ error: '未授權' });
 
-  const { orderId, totalAmount, itemName } = req.body;
-  if (!orderId || !totalAmount || !itemName) return res.status(400).json({ error: '缺少必要參數' });
+    const { orderId, totalAmount, itemName } = req.body;
+    if (!orderId || !totalAmount || !itemName) return res.status(400).json({ error: '缺少必要參數' });
 
-  // MerchantTradeNo：最長 20 字元，僅英數字，永久唯一
-  const tradeNo = `BB${Math.floor(Date.now() / 1000)}${String(Math.floor(Math.random() * 99999)).padStart(5, '0')}`.slice(0, 20);
+    // 環境變數檢查
+    const mid  = process.env.ECPAY_PAYMENT_MERCHANT_ID;
+    const hkey = process.env.ECPAY_PAYMENT_HASH_KEY;
+    const hiv  = process.env.ECPAY_PAYMENT_HASH_IV;
+    if (!mid || !hkey || !hiv) {
+      console.error('[ECPay credit] 缺少環境變數:', { mid: !!mid, hkey: !!hkey, hiv: !!hiv });
+      return res.status(500).json({ error: 'ECPay 環境變數未設定，請在 Render 加入 ECPAY_PAYMENT_MERCHANT_ID / ECPAY_PAYMENT_HASH_KEY / ECPAY_PAYMENT_HASH_IV' });
+    }
 
-  const siteUrl = process.env.SITE_URL || 'https://bunnybliss.onrender.com';
-  const params = {
-    MerchantID:        process.env.ECPAY_PAYMENT_MERCHANT_ID,
-    MerchantTradeNo:   tradeNo,
-    MerchantTradeDate: getMerchantTradeDate(),
-    PaymentType:       'aio',
-    TotalAmount:       totalAmount,
-    TradeDesc:         'Bliss布妮絲菓子工房',
-    // ItemName 過濾系統關鍵字（SKILL.md 注意事項）；超過 200 字截斷
-    ItemName:          itemName.replace(/[<>&"']/g, '').slice(0, 200) || '甜點商品',
-    ReturnURL:         `${siteUrl}/api/ecpay/notify`,
-    ChoosePayment:     'Credit',
-    EncryptType:       1,
-    ClientBackURL:     `${siteUrl}/`,
-    CustomField1:      orderId, // 對應回內部訂單 ID
-  };
-  params.CheckMacValue = generatePaymentCMV(params);
+    // MerchantTradeNo：最長 20 字元，僅英數字，永久唯一
+    const tradeNo = `BB${Math.floor(Date.now() / 1000)}${String(Math.floor(Math.random() * 99999)).padStart(5, '0')}`.slice(0, 20);
 
-  // 同步記錄 ECPay 交易編號到訂單（方便對帳）
-  await supabase.from('orders')
-    .update({ payment: { method: 'credit', ecpay_trade_no: tradeNo } })
-    .eq('id', orderId)
-    .catch(() => {});
+    const siteUrl = process.env.SITE_URL || 'https://bunnybliss.onrender.com';
 
-  const actionUrl = process.env.ECPAY_PAYMENT_URL || 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5';
-  const inputs = Object.entries(params)
-    .map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, '&quot;')}">`)
-    .join('\n');
+    // ItemName：過濾特殊字元，限 200 字
+    const safeItemName = String(itemName).replace(/[<>&"']/g, '').trim().slice(0, 200) || '甜點商品';
 
-  // 回傳自動提交表單（瀏覽器 document.write 後即跳轉）
-  res.send(`<!DOCTYPE html><html><body>
+    const params = {
+      MerchantID:        mid,
+      MerchantTradeNo:   tradeNo,
+      MerchantTradeDate: getMerchantTradeDate(),
+      PaymentType:       'aio',
+      TotalAmount:       Number(totalAmount),
+      TradeDesc:         'Bliss',
+      ItemName:          safeItemName,
+      ReturnURL:         `${siteUrl}/api/ecpay/notify`,
+      ChoosePayment:     'Credit',
+      EncryptType:       1,
+      ClientBackURL:     `${siteUrl}/`,
+      CustomField1:      String(orderId).slice(0, 50),
+    };
+
+    console.log('[ECPay credit] 建立訂單:', tradeNo, 'orderId:', orderId, 'amount:', totalAmount);
+    params.CheckMacValue = generatePaymentCMV(params);
+
+    // 記錄 ECPay 交易編號（非關鍵，失敗不中斷）
+    supabase.from('orders')
+      .update({ payment: { method: 'credit', ecpay_trade_no: tradeNo } })
+      .eq('id', orderId)
+      .then(() => {})
+      .catch(e => console.warn('[ECPay credit] 記錄 tradeNo 失敗:', e.message));
+
+    const actionUrl = process.env.ECPAY_PAYMENT_URL || 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5';
+    const inputs = Object.entries(params)
+      .map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, '&quot;')}">`)
+      .join('\n');
+
+    // 回傳自動提交表單（瀏覽器 document.write 後即跳轉）
+    res.send(`<!DOCTYPE html><html><body>
 <form id="f" action="${actionUrl}" method="POST">${inputs}</form>
 <script>document.getElementById('f').submit();</script>
 </body></html>`);
+
+  } catch (err) {
+    console.error('[ECPay credit] 例外錯誤:', err.message, err.stack);
+    res.status(500).json({ error: '建立付款表單失敗：' + err.message });
+  }
 });
 
 // POST /api/ecpay/notify — ReturnURL，接收綠界付款結果通知（Server-to-Server）
