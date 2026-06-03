@@ -1732,8 +1732,18 @@ async function verifyEcpayPayment(orderId) {
 }
 
 function openOrderModal(id) {
-  const o = getOrders().find(x=>x.id===id);
-  if (!o) return;
+  const orders = getOrders();
+  const o = orders.find(x => x.id === id);
+  if (!o) {
+    // 快取可能已被清除，嘗試直接從快取中 find（兼容新舊格式）
+    const fallback = (_ordersCache?.orders || _ordersCache || []).find(x => x.id === id);
+    if (!fallback) { showToast('找不到訂單，請重新整理頁面'); return; }
+    return openOrderModal_render(fallback);
+  }
+  openOrderModal_render(o);
+}
+
+function openOrderModal_render(o) {
   document.getElementById('order-modal-title').textContent = `訂單 ${o.id}`;
   const payLabel = o.payment?.method==='linepay'?'💚 LINE Pay':'🏦 銀行匯款';
   const d = new Date(o.created_at || o.createdAt);
