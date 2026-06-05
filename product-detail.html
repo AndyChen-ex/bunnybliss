@@ -5,6 +5,14 @@
   <link rel="icon" type="image/png" href="https://res.cloudinary.com/dtszpqdqo/image/upload/w_32,h_32,c_fit/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>商品詳情 | 布妮絲菓子工房 Bliss 手工餅乾</title>
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -437,6 +445,7 @@ function render() {
 
   const cat = cats.find(c => c.id === product.categoryId);
   document.title = `${product.name} | Bliss`;
+  if (window.bbGA) bbGA.viewItem(product, cat?.name);
 
   // Related: same category, exclude self
   const related = getProducts()
@@ -591,6 +600,8 @@ function addDetailToCart() {
   else cart.push({ name, price, image: img, qty });
   saveCart(); updateCartBadge();
   showToast(`已加入購物車：${name} × ${qty}`);
+  const cat = getCategories().find(c => c.id === product.categoryId);
+  if (window.bbGA) bbGA.addToCart(name, price, qty, product.id, cat?.name);
 }
 
 // Cart
@@ -651,6 +662,7 @@ function initSwipe() {
   updateCartBadge();
 })();
 </script>
+<script src="/ga4.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/auth.js"></script>
 </body>

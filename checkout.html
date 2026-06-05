@@ -5,6 +5,14 @@
   <link rel="icon" type="image/png" href="https://res.cloudinary.com/dtszpqdqo/image/upload/w_32,h_32,c_fit/Bliss.LOGO_%E5%9C%96%E6%AA%94-02_yal6m2">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>結帳 | Bliss 布妮絲菓子工房</title>
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -727,6 +735,7 @@ async function submitOrder() {
 
   // 信用卡：產生 ECPay 表單並導向綠界付款頁
   if (payment === 'credit' && sessionToken) {
+    if (window.bbGA) bbGA.purchase(order);
     try {
       const itemName = order.items.map(i => i.name).join('#').slice(0, 200);
       const formHtml = await fetch('/api/ecpay/credit', {
@@ -749,6 +758,7 @@ async function submitOrder() {
 }
 
 function showConfirm(order) {
+  if (window.bbGA) bbGA.purchase(order);
   const settings = getSettings();
   document.getElementById('confirm-oid').textContent = `訂單編號：${order.id}`;
 
@@ -771,6 +781,7 @@ render();
 </script>
 <div class="toast" id="toast" style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--brown);color:var(--white);padding:12px 24px;border-radius:50px;font-size:14px;font-weight:500;z-index:10000;transition:transform 0.3s;white-space:nowrap;"></div>
 <style>.toast.show{transform:translateX(-50%) translateY(0)!important;}</style>
+<script src="/ga4.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/auth.js"></script>
 </body>
