@@ -304,4 +304,145 @@ test.describe('訂單生命週期：下單 → 後台管理 → 完成', () => {
     await expect(page.locator('#orders-wrap')).not.toContainText('OTHER-ORDER');
   });
 
+  // ── 後台訂單詳情 Modal ───────────────────────────────────────────────────────
+
+  async function gotoAdminOrders(page, orders) {
+    await page.route('**/api/admin/orders**', route => {
+      if (route.request().method() === 'GET') {
+        route.fulfill({ status: 200, contentType: 'application/json',
+          body: JSON.stringify({ orders, total: orders.length, limit: 100 }) });
+      } else { route.fulfill({ status: 200, body: '{"ok":true}' }); }
+    });
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' });
+    await page.fill('#login-pwd', ADMIN_PWD);
+    await page.click('button[onclick="doLogin()"]');
+    await page.waitForSelector('#app.visible');
+    await page.evaluate(() => switchPanel('orders'));
+    await page.waitForSelector('#panel-orders', { state: 'visible' });
+    await page.evaluate(() => setOrderFilter('全部'));
+  }
+
+  test('[regression] 詳情按鈕 → modal 顯示', async ({ page }) => {
+    const orders = [
+      { id: 'DETAIL-001', created_at: new Date().toISOString(), status: '待付款',
+        customer: { name: '王小明', phone: '0912345678', email: 'wang@test.com' },
+        shipping: { method: 'home', address: '台北市中山區測試路1號', fee: 60 },
+        payment: { method: 'transfer' },
+        items: [{ name: '捲捲棒', price: 300, qty: 2, image: '' }],
+        subtotal: 600, total: 660 },
+    ];
+    await gotoAdminOrders(page, orders);
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.includes('DETAIL-001'));
+
+    await page.locator('#orders-tbody .btn-edit').first().click();
+    await expect(page.locator('#order-modal-overlay')).toHaveClass(/active/);
+  });
+
+  test('[regression] Modal 顯示正確訂單編號與客戶資訊', async ({ page }) => {
+    const orders = [
+      { id: 'DETAIL-002', created_at: new Date().toISOString(), status: '待付款',
+        customer: { name: '測試客戶', phone: '0987654321', email: 'test@test.com' },
+        shipping: { method: 'home', address: '高雄市三民區中華三路', fee: 60 },
+        payment: { method: 'credit' },
+        items: [{ name: '千層酥', price: 200, qty: 1, image: '' }],
+        subtotal: 200, total: 260 },
+    ];
+    await gotoAdminOrders(page, orders);
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.includes('DETAIL-002'));
+
+    await page.locator('#orders-tbody .btn-edit').first().click();
+    await expect(page.locator('#order-modal-overlay')).toHaveClass(/active/);
+    await expect(page.locator('#order-modal-title')).toHaveText('訂單 DETAIL-002');
+
+    const body = page.locator('#order-modal-body');
+    await expect(body).toContainText('測試客戶');
+    await expect(body).toContainText('0987654321');
+    await expect(body).toContainText('NT$260');
+  });
+
+  test('[regression] Modal 顯示商品明細', async ({ page }) => {
+    const orders = [
+      { id: 'DETAIL-003', created_at: new Date().toISOString(), status: '待付款',
+        customer: { name: 'A', phone: '0911', email: 'a@test.com' },
+        shipping: { method: 'home', address: '台北', fee: 60 },
+        payment: { method: 'transfer' },
+        items: [
+          { name: '捲捲棒', price: 300, qty: 2, image: '' },
+          { name: '千層酥', price: 250, qty: 1, image: '' },
+        ],
+        subtotal: 850, total: 910 },
+    ];
+    await gotoAdminOrders(page, orders);
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.includes('DETAIL-003'));
+
+    await page.locator('#orders-tbody .btn-edit').first().click();
+    const body = page.locator('#order-modal-body');
+    await expect(body).toContainText('捲捲棒');
+    await expect(body).toContainText('千層酥');
+    await expect(body).toContainText('NT$910');
+  });
+
+  test('[regression] Modal 可關閉', async ({ page }) => {
+    const orders = [
+      { id: 'DETAIL-004', created_at: new Date().toISOString(), status: '待付款',
+        customer: { name: 'A', phone: '0911', email: 'a@test.com' },
+        shipping: { method: 'home', address: '台北', fee: 60 },
+        payment: { method: 'transfer' }, items: [], subtotal: 100, total: 160 },
+    ];
+    await gotoAdminOrders(page, orders);
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.includes('DETAIL-004'));
+
+    await page.locator('#orders-tbody .btn-edit').first().click();
+    await expect(page.locator('#order-modal-overlay')).toHaveClass(/active/);
+
+    await page.locator('#order-modal-overlay .modal-close').click();
+    await expect(page.locator('#order-modal-overlay')).not.toHaveClass(/active/);
+  });
+
+  test('[regression] 關閉後可再次開啟', async ({ page }) => {
+    const orders = [
+      { id: 'DETAIL-REOPEN', created_at: new Date().toISOString(), status: '待付款',
+        customer: { name: 'C', phone: '0933', email: 'c@test.com' },
+        shipping: { method: 'cvs', address: 'FamilyMart：南京東路店（台北市松山區）', fee: 60, cvsType: 'FAMI' },
+        payment: { method: 'credit' }, items: [{ name: '捲捲棒', price: 300, qty: 1, image: '' }],
+        subtotal: 300, total: 360 },
+    ];
+    await gotoAdminOrders(page, orders);
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.includes('DETAIL-REOPEN'));
+
+    await page.locator('#orders-tbody .btn-edit').first().click();
+    await expect(page.locator('#order-modal-overlay')).toHaveClass(/active/);
+
+    await page.locator('#order-modal-overlay .modal-close').click();
+    await expect(page.locator('#order-modal-overlay')).not.toHaveClass(/active/);
+
+    // 第二次開啟，確認仍正確
+    await page.locator('#orders-tbody .btn-edit').first().click();
+    await expect(page.locator('#order-modal-overlay')).toHaveClass(/active/);
+    await expect(page.locator('#order-modal-title')).toHaveText('訂單 DETAIL-REOPEN');
+  });
+
+  test('[edge] 快取為空時開啟詳情 → 顯示提示而非靜默無反應', async ({ page }) => {
+    const orders = [
+      { id: 'DETAIL-CACHE', created_at: new Date().toISOString(), status: '待付款',
+        customer: { name: 'D', phone: '0944', email: 'd@test.com' },
+        shipping: { method: 'home', address: '台南', fee: 60 },
+        payment: { method: 'transfer' }, items: [], subtotal: 100, total: 160 },
+    ];
+    await gotoAdminOrders(page, orders);
+    await page.waitForFunction(() => document.getElementById('orders-tbody')?.textContent?.includes('DETAIL-CACHE'));
+
+    // 強制清空快取
+    await page.evaluate(() => { window._ordersCache = null; });
+
+    // 呼叫 openOrderModal，快取為空時應觸發 showToast 而非靜默無反應
+    await page.evaluate(() => openOrderModal('DETAIL-CACHE'));
+    await page.waitForTimeout(300);
+
+    // 要麼 modal 開啟，要麼 toast 顯示（不接受完全無反應）
+    const modalOpen  = await page.locator('#order-modal-overlay.active').count();
+    const toastShown = await page.locator('#toast.show').count();
+    expect(modalOpen + toastShown).toBeGreaterThan(0);
+  });
+
 });
